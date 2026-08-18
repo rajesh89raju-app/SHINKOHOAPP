@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Photo Toolkit</title>
+<style>
+  :root{
+    --bg:#0f1115;
+    --panel:#171a21;
+    --panel2:#1e222b;
+    --border:#2a2f3a;
+    --text:#f2f3f5;
+    --sub:#9aa1ad;
+    --accent:#4f8cff;
+    --accent2:#3a6fd9;
+    --good:#3ecf8e;
+    --danger:#ff5c5c;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  body{padding-bottom:env(safe-area-inset-bottom);}
+  .wrap{max-width:720px;margin:0 auto;padding:16px 16px calc(24px + env(safe-area-inset-bottom));}
+  header{padding:18px 4px 8px;}
+  header h1{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-0.01em;}
+  header p{margin:0;color:var(--sub);font-size:14px;line-height:1.4;}
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:14px;}
+
+  .preset-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+  .preset{
+    background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer;font-size:13px;
+    transition:border-color .15s, background .15s;
+  }
+  .preset .p-title{font-weight:600;font-size:13px;}
+  .preset .p-sub{color:var(--sub);font-size:11px;margin-top:2px;}
+  .preset.active{border-color:var(--accent);background:rgba(79,140,255,0.14);}
+
+  details.adv{margin-top:12px;}
+  details.adv summary{cursor:pointer;color:var(--sub);font-size:13px;list-style:none;display:flex;align-items:center;gap:6px;}
+  details.adv summary::-webkit-details-marker{display:none;}
+  details.adv summary:before{content:"▸";display:inline-block;transition:transform .15s;}
+  details.adv[open] summary:before{transform:rotate(90deg);}
+  .adv-body{padding-top:12px;}
+  .field{margin-top:12px;}
+  .field label{display:flex;justify-content:space-between;font-size:13px;color:var(--sub);margin-bottom:6px;}
+  .field label span.val{color:var(--text);font-weight:600;}
+  input[type=range]{width:100%;accent-color:var(--accent);}
+  select{
+    width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--border);
+    border-radius:10px;padding:10px;font-size:14px;
+  }
+
+  .drop{
+    margin-top:14px;border:2px dashed var(--border);border-radius:var(--radius);
+    padding:28px 16px;text-align:center;color:var(--sub);cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .drop.small{padding:14px 12px;margin-top:10px;border-radius:12px;}
+  .add-pic-row{display:flex;gap:8px;margin-top:10px;}
+  .add-pic-row .drop.small{flex:1;margin-top:0;}
+  .drop.drag{border-color:var(--accent);background:rgba(79,140,255,0.08);}
+  .drop .icon{font-size:30px;margin-bottom:6px;}
+  .drop b{color:var(--text);}
+  input[type=file]{display:none;}
+
+  .btnrow{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+  button{
+    font-family:inherit;font-size:14px;font-weight:600;border:none;border-radius:12px;
+    padding:12px 18px;cursor:pointer;transition:opacity .15s, transform .05s;
+  }
+  button:active{transform:scale(0.97);}
+  button.primary{background:var(--accent);color:#fff;}
+  button.primary:disabled{opacity:0.4;cursor:not-allowed;}
+  button.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border);}
+  button.small{padding:8px 12px;font-size:13px;border-radius:10px;}
+  button.full{width:100%;}
+
+  .summary{display:flex;gap:14px;margin-top:14px;flex-wrap:wrap;}
+  .stat{flex:1;min-width:110px;background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;}
+  .stat .n{font-size:18px;font-weight:700;}
+  .stat .l{font-size:11px;color:var(--sub);margin-top:2px;}
+  .stat .n.good{color:var(--good);}
+
+  .list{margin-top:14px;display:flex;flex-direction:column;gap:10px;}
+  .item{
+    display:flex;align-items:center;gap:12px;background:var(--panel2);
+    border:1px solid var(--border);border-radius:12px;padding:10px;
+  }
+  .item img{width:56px;height:56px;object-fit:cover;border-radius:8px;background:#000;flex-shrink:0;}
+  .item .meta{flex:1;min-width:0;}
+  .item .name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .item .sizes{font-size:12px;color:var(--sub);margin-top:3px;}
+  .item .sizes .arrow{margin:0 4px;color:var(--sub);}
+  .item .sizes .after{color:var(--good);font-weight:600;}
+  .item .pct{font-size:11px;color:var(--good);margin-top:2px;}
+  .item .actions{display:flex;gap:6px;flex-shrink:0;}
+  .item .status{font-size:11px;color:var(--sub);}
+  .iconbtn{
+    width:34px;height:34px;border-radius:10px;background:var(--panel);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;color:var(--text);cursor:pointer;font-size:15px;flex-shrink:0;
+  }
+  .iconbtn:active{transform:scale(0.92);}
+  .iconbtn.remove{color:var(--danger);}
+
+  .empty{color:var(--sub);font-size:13px;text-align:center;padding:18px 8px;}
+  footer{text-align:center;color:var(--sub);font-size:11px;margin-top:22px;padding:0 8px;}
+
+  .toast{
+    position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);
+    background:#222633;border:1px solid var(--border);color:var(--text);padding:10px 16px;border-radius:12px;
+    font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.4);
+    max-width:88vw;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* Tabs */
+  .tabbar{display:flex;gap:4px;margin-top:14px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:4px;}
+  .tabbtn{flex:1;text-align:center;padding:11px 6px;border-radius:10px;background:transparent;border:none;color:var(--sub);font-weight:700;font-size:14px;cursor:pointer;}
+  .tabbtn.active{background:var(--accent);color:#fff;}
+  .tabpanel{display:none;}
+  .tabpanel.active{display:block;}
+
+  /* Report Maker */
+  input[type=text].field-input{
+    width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:10px;
+    color:var(--text);padding:11px;font-size:14px;font-weight:600;margin-top:8px;
+  }
+  textarea.field-input{
+    width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:10px;
+    color:var(--text);padding:11px;font-size:13px;font-weight:400;margin-top:10px;
+    font-family:inherit;resize:vertical;min-height:64px;
+  }
+  .seg-row{display:flex;gap:8px;margin-top:8px;}
+  .seg-btn{flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    border-radius:10px;padding:9px 4px;text-align:center;font-size:13px;cursor:pointer;font-weight:600;}
+  .seg-btn.active{border-color:var(--accent);background:rgba(79,140,255,.16);color:#fff;}
+
+  .section-card{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:12px;}
+  .section-card .sec-head{display:flex;align-items:center;gap:8px;}
+  .section-card .sec-head input{flex:1;margin-top:0;}
+  .sec-num{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+  .thumb-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  .thumb{position:relative;width:66px;height:66px;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:#000;}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .thumb .rm{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.65);
+    color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .thumb.loading{display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:10px;text-align:center;}
+
+  .sec-count{font-size:11px;color:var(--sub);margin-top:2px;}
+  .addsec-wrap{margin-top:12px;}
+
+  .rm-section{color:var(--danger);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🧰 Photo Toolkit</h1>
+    <p>Resize photos or build a photo report — right on your phone. Nothing is uploaded anywhere.</p>
+  </header>
+
+  <div class="tabbar" id="tabbar">
+    <button class="tabbtn active" data-tab="resizer">🖼️ Resizer</button>
+    <button class="tabbtn" data-tab="report">📊 Report Maker</button>
+  </div>
+
+  <!-- ===================== RESIZER TAB ===================== -->
+  <div id="tab-resizer" class="tabpanel active">
+
+    <div class="card">
+      <div style="font-size:14px;font-weight:600;">Compression level</div>
+      <div class="preset-row" id="presetRow">
+        <div class="preset" data-preset="light"><div class="p-title">Light</div><div class="p-sub">1600px</div></div>
+        <div class="preset active" data-preset="balanced"><div class="p-title">Balanced</div><div class="p-sub">1280px</div></div>
+        <div class="preset" data-preset="max"><div class="p-title">Max</div><div class="p-sub">800px</div></div>
+      </div>
+
+      <details class="adv" id="advDetails">
+        <summary>Advanced settings</summary>
+        <div class="adv-body">
+          <div class="field">
+            <label>Max dimension (longest side) <span class="val" id="dimVal">1280 px</span></label>
+            <input type="range" id="dimRange" min="320" max="3000" step="20" value="1280">
+          </div>
+          <div class="field">
+            <label>Quality <span class="val" id="qVal">70%</span></label>
+            <input type="range" id="qRange" min="10" max="95" step="5" value="70">
+          </div>
+          <div class="field">
+            <label>Output format</label>
+            <select id="fmtSelect">
+              <option value="image/jpeg">JPEG (smallest, best for photos)</option>
+              <option value="image/webp">WebP (great compression)</option>
+              <option value="image/png">PNG (lossless, larger)</option>
+            </select>
+          </div>
+        </div>
+      </details>
+
+      <label for="fileInput" class="drop" id="dropZone">
+        <div class="icon">🖼️</div>
+        <div><b>Tap to add photos</b></div>
+        <div style="font-size:12px;margin-top:2px;">or drag &amp; drop here</div>
+      </label>
+      <input type="file" id="fileInput" accept="image/*" multiple>
+
+      <button type="button" class="ghost full small" id="cameraBtn" style="margin-top:10px;">📷 Take a photo</button>
+      <input type="file" id="cameraInput" accept="image/*" capture="environment">
+
+      <div class="btnrow">
+        <button class="primary" id="processBtn" disabled>Resize photos</button>
+        <button class="ghost" id="downloadAllBtn" style="display:none;">Download all (.zip)</button>
+        <button class="ghost" id="clearBtn" style="display:none;">Clear</button>
+      </div>
+
+      <div class="summary" id="summaryRow" style="display:none;">
+        <div class="stat"><div class="n" id="sumBefore">–</div><div class="l">Original total</div></div>
+        <div class="stat"><div class="n good" id="sumAfter">–</div><div class="l">New total</div></div>
+        <div class="stat"><div class="n good" id="sumPct">–</div><div class="l">Reduced by</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Photos</div>
+      <div class="list" id="list"></div>
+      <div class="empty" id="emptyMsg">No photos added yet.</div>
+    </div>
+  </div>
+
+  <!-- ===================== REPORT MAKER TAB ===================== -->
+  <div id="tab-report" class="tabpanel">
+
+    <div class="card">
+      <div style="font-size:14px;font-weight:600;">Report heading</div>
+      <input type="text" id="reportTitle" class="field-input" placeholder="e.g. Site Inspection Report">
+
+      <div class="field">
+        <label>Pictures per row</label>
+        <div class="seg-row" id="colsRow">
+          <div class="seg-btn" data-cols="1">1</div>
+          <div class="seg-btn active" data-cols="2">2</div>
+          <div class="seg-btn" data-cols="3">3</div>
+          <div class="seg-btn" data-cols="4">4</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Picture size in report</label>
+        <div class="seg-row" id="sizeRow">
+          <div class="seg-btn" data-size="150">Small</div>
+          <div class="seg-btn active" data-size="220">Medium</div>
+          <div class="seg-btn" data-size="300">Large</div>
+        </div>
+        <div class="field" style="margin-top:10px;">
+          <label>Custom size <span class="val" id="sizeVal">220 px</span></label>
+          <input type="range" id="sizeRange" min="100" max="400" step="10" value="220">
+        </div>
+        <div style="font-size:11px;color:var(--sub);margin-top:8px;">Photos are auto-cropped to a square and stretched to fill their cell completely — no gaps, no overflow.</div>
+      </div>
+
+      <div class="field">
+        <label>Text size</label>
+        <div class="seg-row" id="fontRow">
+          <div class="seg-btn" data-font="small">Small</div>
+          <div class="seg-btn active" data-font="medium">Medium</div>
+          <div class="seg-btn" data-font="large">Large</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="sectionsList"></div>
+
+    <div class="addsec-wrap">
+      <button class="ghost full" id="addSectionBtn">＋ Add Section</button>
+    </div>
+
+    <div class="card">
+      <div class="summary" id="reportSummary" style="display:none;">
+        <div class="stat"><div class="n" id="repSections">0</div><div class="l">Sections</div></div>
+        <div class="stat"><div class="n" id="repPhotos">0</div><div class="l">Photos</div></div>
+      </div>
+      <div class="btnrow" style="margin-top:0;">
+        <button class="primary full" id="generateReportBtn">Generate Excel Report</button>
+      </div>
+      <div class="btnrow">
+        <button class="ghost" id="clearReportBtn">Clear report</button>
+      </div>
+    </div>
+  </div>
+
+  <footer id="pageFooter">Everything runs locally in your browser. Your photos never leave your device.</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+// ===================== Tab switching (shared) =====================
+(function(){
+  var btns = document.querySelectorAll('.tabbtn');
+  var panels = document.querySelectorAll('.tabpanel');
+  var footer = document.getElementById('pageFooter');
+  Array.prototype.forEach.call(btns, function(btn){
+    btn.addEventListener('click', function(){
+      Array.prototype.forEach.call(btns, function(b){ b.classList.remove('active'); });
+      Array.prototype.forEach.call(panels, function(p){ p.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      footer.textContent = btn.dataset.tab === 'report'
+        ? 'Photos are processed on your phone. Building the Excel file needs internet the first time, to load the spreadsheet engine.'
+        : 'Everything runs locally in your browser. Your photos never leave your device.';
+    });
+  });
+})();
+
+// ===================== Shared toast =====================
+var __toastEl = document.getElementById('toast');
+function showToast(msg){
+  __toastEl.textContent = msg;
+  __toastEl.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(function(){ __toastEl.classList.remove('show'); }, 2400);
+}
+
+function fmtBytes(b){
+  if (b === 0) return '0 B';
+  if (b < 1024) return b + ' B';
+  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+  return (b/(1024*1024)).toFixed(2) + ' MB';
+}
+
+function loadScript(url){
+  return new Promise(function(resolve, reject){
+    var s = document.createElement('script');
+    s.src = url;
+    s.async = true;
+    s.onload = function(){ resolve(); };
+    s.onerror = function(){ reject(new Error('failed to load ' + url)); };
+    document.head.appendChild(s);
+  });
+}
+</script>
+
+<script>
+// ===================== RESIZER TAB LOGIC =====================
+(function(){
+  "use strict";
+
+  var state = {
+    items: [], // {id, file, name, origBytes, newBytes, previewUrl, resultBlob, resultName, status}
+    preset: 'balanced',
+  };
+
+  var presets = {
+    light:    { dim: 1600, q: 78 },
+    balanced: { dim: 1280, q: 70 },
+    max:      { dim: 800,  q: 55 }
+  };
+
+  var els = {
+    presetRow: document.getElementById('presetRow'),
+    dimRange: document.getElementById('dimRange'),
+    dimVal: document.getElementById('dimVal'),
+    qRange: document.getElementById('qRange'),
+    qVal: document.getElementById('qVal'),
+    fmtSelect: document.getElementById('fmtSelect'),
+    advDetails: document.getElementById('advDetails'),
+    dropZone: document.getElementById('dropZone'),
+    fileInput: document.getElementById('fileInput'),
+    cameraBtn: document.getElementById('cameraBtn'),
+    cameraInput: document.getElementById('cameraInput'),
+    processBtn: document.getElementById('processBtn'),
+    downloadAllBtn: document.getElementById('downloadAllBtn'),
+    clearBtn: document.getElementById('clearBtn'),
+    list: document.getElementById('list'),
+    emptyMsg: document.getElementById('emptyMsg'),
+    summaryRow: document.getElementById('summaryRow'),
+    sumBefore: document.getElementById('sumBefore'),
+    sumAfter: document.getElementById('sumAfter'),
+    sumPct: document.getElementById('sumPct'),
+  };
+
+  var idCounter = 0;
+
+  function applyPreset(name){
+    state.preset = name;
+    var p = presets[name];
+    els.dimRange.value = p.dim;
+    els.qRange.value = p.q;
+    els.dimVal.textContent = p.dim + ' px';
+    els.qVal.textContent = p.q + '%';
+    Array.prototype.forEach.call(els.presetRow.children, function(el){
+      el.classList.toggle('active', el.dataset.preset === name);
+    });
+  }
+
+  function markCustom(){
+    Array.prototype.forEach.call(els.presetRow.children, function(el){
+      el.classList.remove('active');
+    });
+  }
+
+  els.presetRow.addEventListener('click', function(e){
+    var target = e.target.closest('.preset');
+    if (!target) return;
+    applyPreset(target.dataset.preset);
+  });
+
+  els.dimRange.addEventListener('input', function(){
+    els.dimVal.textContent = els.dimRange.value + ' px';
+    markCustom();
+  });
+  els.qRange.addEventListener('input', function(){
+    els.qVal.textContent = els.qRange.value + '%';
+    markCustom();
+  });
+  els.fmtSelect.addEventListener('change', markCustom);
+
+  ['dragenter','dragover'].forEach(function(evt){
+    els.dropZone.addEventListener(evt, function(e){
+      e.preventDefault(); e.stopPropagation();
+      els.dropZone.classList.add('drag');
+    });
+  });
+  ['dragleave','drop'].forEach(function(evt){
+    els.dropZone.addEventListener(evt, function(e){
+      e.preventDefault(); e.stopPropagation();
+      els.dropZone.classList.remove('drag');
+    });
+  });
+  els.dropZone.addEventListener('drop', function(e){
+    var files = e.dataTransfer && e.dataTransfer.files;
+    if (files && files.length) addFiles(files);
+  });
+
+  els.fileInput.addEventListener('change', function(){
+    if (els.fileInput.files && els.fileInput.files.length){
+      addFiles(els.fileInput.files);
+    }
+    els.fileInput.value = '';
+  });
+
+  els.cameraBtn.addEventListener('click', function(){ els.cameraInput.click(); });
+  els.cameraInput.addEventListener('change', function(){
+    if (els.cameraInput.files && els.cameraInput.files.length){
+      addFiles(els.cameraInput.files);
+    }
+    els.cameraInput.value = '';
+  });
+
+  function addFiles(fileList){
+    var added = 0;
+    for (var i=0; i<fileList.length; i++){
+      var f = fileList[i];
+      if (!f.type || f.type.indexOf('image/') !== 0) continue;
+      var id = 'img' + (++idCounter);
+      var item = {
+        id: id,
+        file: f,
+        name: f.name || ('photo_' + id),
+        origBytes: f.size,
+        newBytes: null,
+        previewUrl: URL.createObjectURL(f),
+        resultBlob: null,
+        resultUrl: null,
+        resultName: null,
+        status: 'pending' // pending | working | done | error
+      };
+      state.items.push(item);
+      added++;
+    }
+    if (added) {
+      render();
+      els.processBtn.disabled = false;
+      showToast(added + (added === 1 ? ' photo added' : ' photos added'));
+    }
+  }
+
+  function removeItem(id){
+    var idx = state.items.findIndex(function(it){ return it.id === id; });
+    if (idx === -1) return;
+    var it = state.items[idx];
+    if (it.previewUrl) URL.revokeObjectURL(it.previewUrl);
+    if (it.resultUrl) URL.revokeObjectURL(it.resultUrl);
+    state.items.splice(idx, 1);
+    render();
+    if (!state.items.length){
+      els.processBtn.disabled = true;
+    }
+  }
+
+  function render(){
+    els.list.innerHTML = '';
+    els.emptyMsg.style.display = state.items.length ? 'none' : 'block';
+    els.clearBtn.style.display = state.items.length ? 'inline-block' : 'none';
+
+    els.downloadAllBtn.style.display = (state.items.filter(function(it){return it.status==='done';}).length > 1) ? 'inline-block' : 'none';
+
+    state.items.forEach(function(it){
+      var row = document.createElement('div');
+      row.className = 'item';
+
+      var img = document.createElement('img');
+      img.src = it.resultUrl || it.previewUrl;
+      row.appendChild(img);
+
+      var meta = document.createElement('div');
+      meta.className = 'meta';
+
+      var name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = it.resultName || it.name;
+      meta.appendChild(name);
+
+      var sizes = document.createElement('div');
+      sizes.className = 'sizes';
+      if (it.status === 'done'){
+        var pct = Math.max(0, Math.round((1 - it.newBytes/it.origBytes) * 100));
+        sizes.innerHTML = fmtBytes(it.origBytes) + '<span class="arrow">→</span><span class="after">' + fmtBytes(it.newBytes) + '</span>';
+        meta.appendChild(sizes);
+        var pctEl = document.createElement('div');
+        pctEl.className = 'pct';
+        pctEl.textContent = pct > 0 ? ('−' + pct + '% smaller') : 'no size reduction';
+        meta.appendChild(pctEl);
+      } else if (it.status === 'working'){
+        sizes.textContent = fmtBytes(it.origBytes) + ' · resizing…';
+        meta.appendChild(sizes);
+      } else if (it.status === 'error'){
+        sizes.textContent = 'Could not process this file';
+        sizes.style.color = 'var(--danger)';
+        meta.appendChild(sizes);
+      } else {
+        sizes.textContent = fmtBytes(it.origBytes) + ' · waiting';
+        meta.appendChild(sizes);
+      }
+
+      row.appendChild(meta);
+
+      var actions = document.createElement('div');
+      actions.className = 'actions';
+
+      if (it.status === 'done'){
+        var dl = document.createElement('div');
+        dl.className = 'iconbtn';
+        dl.title = 'Download';
+        dl.textContent = '⬇️';
+        dl.addEventListener('click', function(){ downloadItem(it); });
+        actions.appendChild(dl);
+      }
+
+      var rm = document.createElement('div');
+      rm.className = 'iconbtn remove';
+      rm.title = 'Remove';
+      rm.textContent = '✕';
+      rm.addEventListener('click', function(){ removeItem(it.id); });
+      actions.appendChild(rm);
+
+      row.appendChild(actions);
+      els.list.appendChild(row);
+    });
+
+    updateSummary();
+  }
+
+  function updateSummary(){
+    var done = state.items.filter(function(it){ return it.status === 'done'; });
+    if (!done.length){
+      els.summaryRow.style.display = 'none';
+      return;
+    }
+    var before = done.reduce(function(s,it){ return s + it.origBytes; }, 0);
+    var after = done.reduce(function(s,it){ return s + it.newBytes; }, 0);
+    els.summaryRow.style.display = 'flex';
+    els.sumBefore.textContent = fmtBytes(before);
+    els.sumAfter.textContent = fmtBytes(after);
+    var pct = before > 0 ? Math.round((1 - after/before) * 100) : 0;
+    els.sumPct.textContent = (pct > 0 ? pct : 0) + '%';
+  }
+
+  function extForMime(mime){
+    if (mime === 'image/jpeg') return '.jpg';
+    if (mime === 'image/webp') return '.webp';
+    if (mime === 'image/png') return '.png';
+    return '';
+  }
+
+  function stripExt(name){
+    var idx = name.lastIndexOf('.');
+    return idx > 0 ? name.slice(0, idx) : name;
+  }
+
+  function loadImage(file){
+    return new Promise(function(resolve, reject){
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function(){ resolve({img: img, url: url}); };
+      img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error('load failed')); };
+      img.src = url;
+    });
+  }
+
+  function resizeOne(item, opts){
+    return loadImage(item.file).then(function(res){
+      var img = res.img;
+      URL.revokeObjectURL(res.url);
+
+      var w = img.naturalWidth, h = img.naturalHeight;
+      var longest = Math.max(w, h);
+      var scale = longest > opts.maxDim ? (opts.maxDim / longest) : 1;
+      var tw = Math.max(1, Math.round(w * scale));
+      var th = Math.max(1, Math.round(h * scale));
+
+      var canvas = document.createElement('canvas');
+      canvas.width = tw;
+      canvas.height = th;
+      var ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      if (opts.mime === 'image/jpeg'){
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, tw, th);
+      }
+      ctx.drawImage(img, 0, 0, tw, th);
+
+      return new Promise(function(resolve, reject){
+        canvas.toBlob(function(blob){
+          if (!blob){ reject(new Error('toBlob failed')); return; }
+          resolve(blob);
+        }, opts.mime, opts.quality);
+      });
+    });
+  }
+
+  function processAll(){
+    var opts = {
+      maxDim: parseInt(els.dimRange.value, 10),
+      quality: parseInt(els.qRange.value, 10) / 100,
+      mime: els.fmtSelect.value
+    };
+
+    var pending = state.items.filter(function(it){ return it.status !== 'done'; });
+    if (!pending.length){ showToast('Nothing to process'); return; }
+
+    els.processBtn.disabled = true;
+    els.processBtn.textContent = 'Resizing…';
+
+    pending.forEach(function(it){ it.status = 'working'; });
+    render();
+
+    var chain = Promise.resolve();
+    pending.forEach(function(it){
+      chain = chain.then(function(){
+        return resizeOne(it, opts).then(function(blob){
+          if (it.resultUrl) URL.revokeObjectURL(it.resultUrl);
+          it.resultBlob = blob;
+          it.newBytes = blob.size;
+          it.resultUrl = URL.createObjectURL(blob);
+          it.resultName = stripExt(it.name) + '_resized' + extForMime(opts.mime);
+          it.status = 'done';
+          render();
+        }).catch(function(){
+          it.status = 'error';
+          render();
+        });
+      });
+    });
+
+    chain.then(function(){
+      els.processBtn.disabled = false;
+      els.processBtn.textContent = 'Resize photos';
+      var doneCount = state.items.filter(function(it){ return it.status === 'done'; }).length;
+      showToast('Done — ' + doneCount + ' photo' + (doneCount===1?'':'s') + ' ready');
+    });
+  }
+
+  function downloadItem(it){
+    var a = document.createElement('a');
+    a.href = it.resultUrl;
+    a.download = it.resultName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function downloadAll(){
+    var done = state.items.filter(function(it){ return it.status === 'done'; });
+    if (!done.length) return;
+    if (typeof JSZip === 'undefined'){
+      done.forEach(function(it){ downloadItem(it); });
+      return;
+    }
+    els.downloadAllBtn.disabled = true;
+    els.downloadAllBtn.textContent = 'Zipping…';
+    var zip = new JSZip();
+    var used = {};
+    done.forEach(function(it){
+      var name = it.resultName;
+      if (used[name]){
+        used[name]++;
+        name = stripExt(name) + '_' + used[name] + name.slice(name.lastIndexOf('.'));
+      } else {
+        used[name] = 1;
+      }
+      zip.file(name, it.resultBlob);
+    });
+    zip.generateAsync({type:'blob'}).then(function(blob){
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'resized_photos.zip';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+      els.downloadAllBtn.disabled = false;
+      els.downloadAllBtn.textContent = 'Download all (.zip)';
+    }).catch(function(){
+      els.downloadAllBtn.disabled = false;
+      els.downloadAllBtn.textContent = 'Download all (.zip)';
+      showToast('Zip failed — try downloading individually');
+    });
+  }
+
+  function clearAll(){
+    state.items.forEach(function(it){
+      if (it.previewUrl) URL.revokeObjectURL(it.previewUrl);
+      if (it.resultUrl) URL.revokeObjectURL(it.resultUrl);
+    });
+    state.items = [];
+    render();
+    els.processBtn.disabled = true;
+  }
+
+  els.processBtn.addEventListener('click', processAll);
+  els.downloadAllBtn.addEventListener('click', downloadAll);
+  els.clearBtn.addEventListener('click', clearAll);
+
+  applyPreset('balanced');
+  render();
+})();
+</script>
+
+<script>
+// ===================== REPORT MAKER TAB LOGIC =====================
+(function(){
+  "use strict";
+
+  var state = {
+    reportTitle: '',
+    imagesPerRow: 2,
+    boxSize: 220, // px, square box each picture is stretched to fill
+    fontSize: 'medium',
+    sections: []  // {id, title, comments, images:[{id,dataUrl,width,height}], _processing}
+  };
+
+  var fontScales = {
+    small:  { title: 14, header: 11, body: 9  },
+    medium: { title: 18, header: 13, body: 11 },
+    large:  { title: 22, header: 16, body: 13 }
+  };
+
+  var secCounter = 0;
+  var imgCounter = 0;
+
+  var els = {
+    reportTitle: document.getElementById('reportTitle'),
+    colsRow: document.getElementById('colsRow'),
+    sizeRow: document.getElementById('sizeRow'),
+    sizeRange: document.getElementById('sizeRange'),
+    sizeVal: document.getElementById('sizeVal'),
+    fontRow: document.getElementById('fontRow'),
+    sectionsList: document.getElementById('sectionsList'),
+    addSectionBtn: document.getElementById('addSectionBtn'),
+    generateBtn: document.getElementById('generateReportBtn'),
+    clearBtn: document.getElementById('clearReportBtn'),
+    reportSummary: document.getElementById('reportSummary'),
+    repSections: document.getElementById('repSections'),
+    repPhotos: document.getElementById('repPhotos'),
+  };
+
+  els.reportTitle.addEventListener('input', function(){
+    state.reportTitle = els.reportTitle.value;
+  });
+
+  els.colsRow.addEventListener('click', function(e){
+    var t = e.target.closest('.seg-btn');
+    if (!t) return;
+    state.imagesPerRow = parseInt(t.dataset.cols, 10);
+    Array.prototype.forEach.call(els.colsRow.children, function(el){
+      el.classList.toggle('active', el === t);
+    });
+  });
+
+  function setBoxSize(px, presetEl){
+    state.boxSize = px;
+    els.sizeRange.value = px;
+    els.sizeVal.textContent = px + ' px';
+    Array.prototype.forEach.call(els.sizeRow.children, function(el){
+      el.classList.toggle('active', el === presetEl);
+    });
+  }
+
+  els.sizeRow.addEventListener('click', function(e){
+    var t = e.target.closest('.seg-btn');
+    if (!t) return;
+    setBoxSize(parseInt(t.dataset.size, 10), t);
+  });
+
+  els.sizeRange.addEventListener('input', function(){
+    var px = parseInt(els.sizeRange.value, 10);
+    state.boxSize = px;
+    els.sizeVal.textContent = px + ' px';
+    // no preset matches an arbitrary slider value -> mark all inactive ("custom")
+    Array.prototype.forEach.call(els.sizeRow.children, function(el){
+      el.classList.toggle('active', parseInt(el.dataset.size, 10) === px);
+    });
+  });
+
+  els.fontRow.addEventListener('click', function(e){
+    var t = e.target.closest('.seg-btn');
+    if (!t) return;
+    state.fontSize = t.dataset.font;
+    Array.prototype.forEach.call(els.fontRow.children, function(el){
+      el.classList.toggle('active', el === t);
+    });
+  });
+
+  function addSection(){
+    state.sections.push({
+      id: 'sec' + (++secCounter),
+      title: '',
+      comments: '',
+      images: [],
+      _processing: false
+    });
+    renderSections();
+  }
+
+  function getSection(id){
+    return state.sections.find(function(s){ return s.id === id; });
+  }
+
+  function removeSection(id){
+    var idx = state.sections.findIndex(function(s){ return s.id === id; });
+    if (idx !== -1) state.sections.splice(idx, 1);
+    renderSections();
+  }
+
+  function removeImage(sectionId, imageId){
+    var sec = getSection(sectionId);
+    if (!sec) return;
+    var idx = sec.images.findIndex(function(im){ return im.id === imageId; });
+    if (idx !== -1) sec.images.splice(idx, 1);
+    renderSections();
+  }
+
+  // Center-crops the photo to a square (like a contact-sheet thumbnail) and
+  // downsizes + compresses it (a full-res phone photo can be 3-5 MB; a report
+  // cell only ever displays it at up to a few hundred pixels, so there's no
+  // reason to embed anything bigger — this keeps every embedded photo down
+  // to roughly the smallest size that still looks sharp at report scale).
+  // The square crop also means it can later be stretched to exactly fill a
+  // report cell with no gaps and no overflow into neighboring cells.
+  function processImageFile(file, maxDim, quality){
+    return new Promise(function(resolve, reject){
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function(){
+        URL.revokeObjectURL(url);
+        var w = img.naturalWidth, h = img.naturalHeight;
+        var cropSize = Math.min(w, h);
+        var sx = (w - cropSize) / 2;
+        var sy = (h - cropSize) / 2;
+        var outSize = Math.min(cropSize, maxDim);
+        var canvas = document.createElement('canvas');
+        canvas.width = outSize; canvas.height = outSize;
+        var ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        // source rect = centered square crop, dest rect = full canvas (crop + resize in one draw)
+        ctx.drawImage(img, sx, sy, cropSize, cropSize, 0, 0, outSize, outSize);
+        var dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve({ dataUrl: dataUrl, width: outSize, height: outSize });
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error('load failed')); };
+      img.src = url;
+    });
+  }
+
+  function onSectionFilesSelected(sectionId, fileList){
+    var sec = getSection(sectionId);
+    if (!sec) return;
+    var files = Array.prototype.slice.call(fileList).filter(function(f){
+      return f.type && f.type.indexOf('image/') === 0;
+    });
+    if (!files.length) return;
+
+    sec._processing = true;
+    renderSections();
+
+    var chain = Promise.resolve();
+    files.forEach(function(f){
+      chain = chain.then(function(){
+        return processImageFile(f, 800, 0.72).then(function(res){
+          sec.images.push({
+            id: 'im' + (++imgCounter),
+            dataUrl: res.dataUrl,
+            width: res.width,
+            height: res.height
+          });
+        }).catch(function(){ /* skip file that failed to load */ });
+      });
+    });
+
+    chain.then(function(){
+      sec._processing = false;
+      renderSections();
+    });
+  }
+
+  function renderSections(){
+    els.sectionsList.innerHTML = '';
+
+    state.sections.forEach(function(sec, idx){
+      var card = document.createElement('div');
+      card.className = 'section-card';
+
+      // Header row: number, title input, remove button
+      var head = document.createElement('div');
+      head.className = 'sec-head';
+
+      var num = document.createElement('div');
+      num.className = 'sec-num';
+      num.textContent = idx + 1;
+      head.appendChild(num);
+
+      var titleInput = document.createElement('input');
+      titleInput.type = 'text';
+      titleInput.className = 'field-input';
+      titleInput.placeholder = 'Section ' + (idx + 1) + ' title (e.g. Kitchen)';
+      titleInput.value = sec.title;
+      titleInput.addEventListener('input', function(){ sec.title = titleInput.value; });
+      head.appendChild(titleInput);
+
+      var rm = document.createElement('div');
+      rm.className = 'iconbtn remove rm-section';
+      rm.title = 'Remove section';
+      rm.textContent = '✕';
+      rm.addEventListener('click', function(){ removeSection(sec.id); });
+      head.appendChild(rm);
+
+      card.appendChild(head);
+
+      // Add pictures controls: pick from gallery, or take a new photo now
+      var fileId = 'secfile_' + sec.id;
+      var camId = 'seccam_' + sec.id;
+
+      var addRow = document.createElement('div');
+      addRow.className = 'add-pic-row';
+
+      var dropLabel = document.createElement('label');
+      dropLabel.className = 'drop small';
+      dropLabel.setAttribute('for', fileId);
+      dropLabel.innerHTML = '<b>🖼️ Gallery</b>';
+
+      var fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.id = fileId;
+      fileInput.accept = 'image/*';
+      fileInput.multiple = true;
+      fileInput.addEventListener('change', function(){
+        if (fileInput.files && fileInput.files.length){
+          onSectionFilesSelected(sec.id, fileInput.files);
+        }
+        fileInput.value = '';
+      });
+
+      var camLabel = document.createElement('label');
+      camLabel.className = 'drop small';
+      camLabel.setAttribute('for', camId);
+      camLabel.innerHTML = '<b>📷 Camera</b>';
+
+      var camInput = document.createElement('input');
+      camInput.type = 'file';
+      camInput.id = camId;
+      camInput.accept = 'image/*';
+      camInput.setAttribute('capture', 'environment');
+      camInput.addEventListener('change', function(){
+        if (camInput.files && camInput.files.length){
+          onSectionFilesSelected(sec.id, camInput.files);
+        }
+        camInput.value = '';
+      });
+
+      addRow.appendChild(dropLabel);
+      addRow.appendChild(fileInput);
+      addRow.appendChild(camLabel);
+      addRow.appendChild(camInput);
+      card.appendChild(addRow);
+
+      var count = document.createElement('div');
+      count.className = 'sec-count';
+      count.textContent = sec._processing
+        ? 'Processing photos…'
+        : (sec.images.length ? (sec.images.length + ' photo' + (sec.images.length===1?'':'s') + ' added') : 'No photos yet');
+      card.appendChild(count);
+
+      // Thumbnail grid
+      if (sec.images.length || sec._processing){
+        var grid = document.createElement('div');
+        grid.className = 'thumb-grid';
+        sec.images.forEach(function(im){
+          var th = document.createElement('div');
+          th.className = 'thumb';
+          var img = document.createElement('img');
+          img.src = im.dataUrl;
+          th.appendChild(img);
+          var rmT = document.createElement('div');
+          rmT.className = 'rm';
+          rmT.textContent = '✕';
+          rmT.addEventListener('click', function(){ removeImage(sec.id, im.id); });
+          th.appendChild(rmT);
+          grid.appendChild(th);
+        });
+        if (sec._processing){
+          var loading = document.createElement('div');
+          loading.className = 'thumb loading';
+          loading.textContent = '…';
+          grid.appendChild(loading);
+        }
+        card.appendChild(grid);
+      }
+
+      // Comments
+      var comments = document.createElement('textarea');
+      comments.className = 'field-input';
+      comments.placeholder = 'Comments for this section…';
+      comments.value = sec.comments;
+      comments.addEventListener('input', function(){ sec.comments = comments.value; });
+      card.appendChild(comments);
+
+      els.sectionsList.appendChild(card);
+    });
+
+    updateReportSummary();
+  }
+
+  function updateReportSummary(){
+    var totalPhotos = state.sections.reduce(function(s, sec){ return s + sec.images.length; }, 0);
+    if (!state.sections.length){
+      els.reportSummary.style.display = 'none';
+    } else {
+      els.reportSummary.style.display = 'flex';
+      els.repSections.textContent = state.sections.length;
+      els.repPhotos.textContent = totalPhotos;
+    }
+  }
+
+  // Excel's column-width unit is "characters", not pixels. The standard
+  // conversion (used by Excel/OOXML/openpyxl) for the default Calibri 11
+  // font is chars = (pixels - 5) / 7. Row height is in points, a clean
+  // pixels*0.75 conversion (96dpi -> 72pt). These get the CELL close to the
+  // requested size, but since real rendering can still drift slightly by
+  // font/platform, the images themselves are anchored cell-to-cell (see
+  // buildWorkbook) so they always fill the cell exactly regardless.
+  function pxToColWidth(px){
+    return Math.max(2, +((px - 5) / 7).toFixed(2));
+  }
+  function pxToRowHeight(px){
+    return Math.max(15, +(px * 0.75).toFixed(2));
+  }
+
+  function sheetNameFromTitle(title){
+    var name = (title || 'Report').replace(/[\[\]\*\/\\\?:]/g, '').trim();
+    if (!name) name = 'Report';
+    if (name.length > 31) name = name.slice(0, 31);
+    return name;
+  }
+
+  var _exceljsPromise = null;
+  function ensureExcelJS(){
+    if (window.ExcelJS) return Promise.resolve();
+    if (_exceljsPromise) return _exceljsPromise;
+    _exceljsPromise = loadScript('https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js')
+      .catch(function(){
+        return loadScript('https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js');
+      });
+    return _exceljsPromise;
+  }
+
+  function validateReport(){
+    if (!state.sections.length) return 'Add at least one section first.';
+    var hasContent = state.sections.some(function(sec){
+      return sec.images.length > 0 || (sec.comments && sec.comments.trim().length > 0);
+    });
+    if (!hasContent) return 'Add at least one photo or comment to a section.';
+    return null;
+  }
+
+  function setGenerating(on){
+    els.generateBtn.disabled = on;
+    els.generateBtn.textContent = on ? 'Building report…' : 'Generate Excel Report';
+  }
+
+  var THIN_LINE = { style: 'thin', color: { argb: 'FF8A93A3' } };
+  var THIN_BOX = { top: THIN_LINE, left: THIN_LINE, bottom: THIN_LINE, right: THIN_LINE };
+  // What fraction of the cell each photo actually fills (the rest is an even
+  // margin on all sides, which is what makes the cell border visible — see
+  // note where images are placed, below). 0.92 reads as "fills the cell"
+  // while still leaving enough of a gap for a border to show.
+  var IMG_FILL = 0.92;
+
+  // Applies a single thin border around every cell from column c1 to c2 on a
+  // given row. Excel only "sees" the outer edge of a merged range visually,
+  // but the underlying cells still need matching borders set on each of
+  // them for that outer edge to render — so this loops across the row
+  // rather than styling just the merge's anchor cell.
+  function borderRow(ws, row, c1, c2){
+    for (var cc = c1; cc <= c2; cc++){
+      ws.getCell(row, cc).border = THIN_BOX;
+    }
+  }
+
+  function buildWorkbook(ExcelJSRef){
+    var wb = new ExcelJSRef.Workbook();
+    wb.creator = 'Photo Toolkit';
+    wb.created = new Date();
+
+    var reportTitle = (state.reportTitle && state.reportTitle.trim()) || 'Report';
+    var fonts = fontScales[state.fontSize] || fontScales.medium;
+    var ws = wb.addWorksheet(sheetNameFromTitle(reportTitle));
+
+    var N = state.imagesPerRow;
+    var boxPx = state.boxSize;
+    var colWidthUnits = pxToColWidth(boxPx);
+    for (var c = 1; c <= N; c++){ ws.getColumn(c).width = colWidthUnits; }
+
+    var row = 1;
+
+    ws.mergeCells(row, 1, row, N);
+    var titleCell = ws.getCell(row, 1);
+    titleCell.value = reportTitle;
+    titleCell.font = { size: fonts.title, bold: true, color: { argb: 'FF1F2430' } };
+    titleCell.alignment = { vertical: 'middle' };
+    ws.getRow(row).height = fonts.title * 1.6;
+    row++;
+
+    ws.mergeCells(row, 1, row, N);
+    var subCell = ws.getCell(row, 1);
+    subCell.value = 'Generated ' + new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    subCell.font = { size: Math.max(9, fonts.body - 2), italic: true, color: { argb: 'FF9AA1AD' } };
+    row += 2;
+
+    var totalImages = 0;
+
+    state.sections.forEach(function(sec, idx){
+      var title = (sec.title && sec.title.trim()) || ('Section ' + (idx + 1));
+
+      ws.mergeCells(row, 1, row, N);
+      var hCell = ws.getCell(row, 1);
+      hCell.value = title;
+      hCell.font = { size: fonts.header, bold: true, color: { argb: 'FFFFFFFF' } };
+      hCell.alignment = { vertical: 'middle', indent: 1 };
+      hCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F8CFF' } };
+      ws.getRow(row).height = fonts.header * 1.7;
+      borderRow(ws, row, 1, N);
+      row++;
+
+      if (sec.images.length){
+        var numRows = Math.ceil(sec.images.length / N);
+        for (var r = 0; r < numRows; r++){
+          ws.getRow(row).height = pxToRowHeight(boxPx);
+          for (var c2 = 0; c2 < N; c2++){
+            // Border every cell in the grid, even trailing empty ones on a
+            // partial last row, so the picture grid reads as one clean,
+            // fully-ruled table (a single thin line around each cell).
+            ws.getCell(row, c2 + 1).border = THIN_BOX;
+
+            var flatIdx = r * N + c2;
+            if (flatIdx >= sec.images.length) continue;
+            var im = sec.images[flatIdx];
+            // Photos are pre-cropped to a square on upload, then placed with
+            // a plain "one cell" anchor: a top-left corner (tl) plus a fixed
+            // pixel size (ext). This is the simplest, most universally
+            // understood image-placement format in the xlsx file format.
+            //
+            // An earlier version anchored images with BOTH tl and br
+            // (a "two cell" anchor stretched to exactly fill the cell) to
+            // guarantee a pixel-perfect fit. That turned out to trigger a
+            // known bug in the library this runs on: two-cell anchors don't
+            // reliably carry their sizing/edit behavior across apps, so
+            // Excel and WPS repaired/displayed the image fine but Google
+            // Sheets silently dropped it. Falling back to tl+ext sidesteps
+            // that bug entirely — every reader supports it.
+            // The image is sized to IMG_FILL (92%) of the cell and centered,
+            // which as a side effect leaves a small even margin so the
+            // cell's border is actually visible around each photo.
+            var dim = boxPx * IMG_FILL;
+            var marginFrac = (1 - IMG_FILL) / 2;
+            var imgId = wb.addImage({ base64: im.dataUrl, extension: 'jpeg' });
+            ws.addImage(imgId, {
+              tl: { col: c2 + marginFrac, row: (row - 1) + marginFrac },
+              ext: { width: dim, height: dim }
+            });
+            totalImages++;
+          }
+          row++;
+        }
+      }
+
+      if (sec.comments && sec.comments.trim()){
+        ws.mergeCells(row, 1, row, N);
+        var cCell = ws.getCell(row, 1);
+        cCell.value = sec.comments.trim();
+        cCell.alignment = { wrapText: true, vertical: 'top', horizontal: 'left' };
+        cCell.font = { size: fonts.body, color: { argb: 'FF2C303A' } };
+        var approxCharsPerLine = Math.max(14, Math.round((16 * N) * (11 / fonts.body)));
+        var lines = Math.max(1, Math.ceil(sec.comments.trim().length / approxCharsPerLine));
+        var lineHeight = fonts.body * 1.4;
+        ws.getRow(row).height = Math.max(fonts.body * 3, Math.min(260, lines * lineHeight + 20));
+        borderRow(ws, row, 1, N);
+        row++;
+      }
+
+      row++; // spacer between sections
+    });
+
+    return { workbook: wb, totalImages: totalImages };
+  }
+
+  function generateReport(){
+    var err = validateReport();
+    if (err){ showToast(err); return; }
+
+    setGenerating(true);
+    ensureExcelJS().then(function(){
+      return buildWorkbook(window.ExcelJS);
+    }).then(function(result){
+      return result.workbook.xlsx.writeBuffer().then(function(buf){
+        return { buf: buf, totalImages: result.totalImages };
+      });
+    }).then(function(res){
+      var blob = new Blob([res.buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      var url = URL.createObjectURL(blob);
+      var fname = ((state.reportTitle && state.reportTitle.trim()) || 'Report').replace(/[^a-z0-9\-_ ]/gi, '').trim() || 'Report';
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = fname + '.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+      showToast('Report ready — ' + res.totalImages + ' photo' + (res.totalImages===1?'':'s') + ' included');
+    }).catch(function(e){
+      console.error(e);
+      showToast('Could not build the report. Check your internet connection and try again.');
+    }).finally(function(){
+      setGenerating(false);
+    });
+  }
+
+  function clearReport(){
+    state.reportTitle = '';
+    state.sections = [];
+    els.reportTitle.value = '';
+    renderSections();
+  }
+
+  els.addSectionBtn.addEventListener('click', addSection);
+  els.generateBtn.addEventListener('click', generateReport);
+  els.clearBtn.addEventListener('click', clearReport);
+
+  renderSections();
+  addSection(); // start with one section ready to go
+})();
+</script>
+</body>
+</html>
