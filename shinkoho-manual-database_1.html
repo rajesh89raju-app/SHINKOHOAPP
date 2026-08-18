@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title id="docTitle">Shinkoho Manual Database</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b1f3a">
+<meta name="description" content="Offline manual reference database - view only, owner-managed.">
+<style>
+:root{
+  --navy-950:#071426;
+  --navy-900:#0b1f3a;
+  --navy-800:#0f2a4a;
+  --navy-700:#173a61;
+  --navy-600:#22507f;
+  --gold:#d4af37;
+  --gold-light:#f1d98b;
+  --bg:#eef2f7;
+  --card:#ffffff;
+  --text:#182634;
+  --text-muted:#5c6b7c;
+  --border:#e1e7ee;
+  --danger:#c0392b;
+  --danger-dark:#9c2c20;
+  --success:#1f8a55;
+  --radius:16px;
+  --radius-sm:10px;
+  --shadow: 0 1px 2px rgba(11,31,58,0.06), 0 8px 24px rgba(11,31,58,0.08);
+  --shadow-lg: 0 12px 36px rgba(11,31,58,0.22);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:96px;
+}
+::selection{background:var(--gold-light);}
+button{font-family:inherit;cursor:pointer;}
+input,textarea{font-family:inherit;}
+a{color:var(--navy-700);}
+
+/* ---------- Header ---------- */
+header.app-header{
+  background:linear-gradient(135deg,var(--navy-950) 0%, var(--navy-900) 45%, var(--navy-700) 100%);
+  color:#fff;
+  padding:28px 20px 22px;
+  position:relative;
+  overflow:hidden;
+}
+header.app-header::after{
+  content:"";
+  position:absolute; inset:0;
+  background:radial-gradient(600px 200px at 85% -20%, rgba(212,175,55,0.18), transparent 70%);
+  pointer-events:none;
+}
+.header-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:16px;position:relative;}
+.brand-icon{
+  flex:none;width:52px;height:52px;border-radius:14px;
+  background:rgba(212,175,55,0.14);
+  border:1px solid rgba(212,175,55,0.4);
+  display:flex;align-items:center;justify-content:center;
+}
+.brand-icon svg{width:28px;height:28px;stroke:var(--gold-light);}
+.brand-text h1{
+  margin:0; font-size:22px; letter-spacing:0.04em; font-weight:700;
+  color:#fdf7e6;
+}
+.brand-text p{margin:2px 0 0; font-size:12.5px; color:#bcd0e6; letter-spacing:0.03em;}
+.header-stats{
+  margin-left:auto; display:flex; gap:18px; flex-wrap:wrap; justify-content:flex-end;
+}
+.stat-pill{
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.14);
+  border-radius:999px; padding:6px 14px; font-size:12px; color:#e7edf4;
+  white-space:nowrap;
+}
+.stat-pill b{color:var(--gold-light); font-weight:700;}
+
+/* ---------- Toolbar ---------- */
+.toolbar{
+  position:sticky; top:0; z-index:30;
+  background:rgba(238,242,247,0.92);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--border);
+  padding:12px 20px;
+}
+.toolbar-inner{max-width:1100px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1 1 220px;min-width:160px;}
+.search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--text-muted);}
+#searchInput{
+  width:100%; padding:10px 12px 10px 36px; border-radius:999px; border:1px solid var(--border);
+  background:#fff; font-size:14px; outline:none; transition:border-color .15s;
+}
+#searchInput:focus{border-color:var(--navy-600);}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:9px 14px; border-radius:999px; border:1px solid var(--border);
+  background:#fff; color:var(--text); font-size:13.5px; font-weight:600;
+  white-space:nowrap; transition:all .15s;
+}
+.btn svg{width:15px;height:15px;flex:none;}
+.btn:hover{border-color:var(--navy-600); color:var(--navy-800);}
+.btn-primary{background:var(--navy-900); color:#fff; border-color:var(--navy-900);}
+.btn-primary:hover{background:var(--navy-800); color:#fff;}
+.btn-gold{background:var(--gold); border-color:var(--gold); color:var(--navy-950);}
+.btn-gold:hover{background:var(--gold-light); color:var(--navy-950);}
+.btn-ghost{background:transparent;border-color:transparent;}
+.btn-danger{color:var(--danger); border-color:#f1d3ce;}
+.btn-danger:hover{background:#fdecea;border-color:var(--danger);}
+.btn-sm{padding:6px 10px;font-size:12.5px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.icon-btn{
+  width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:#fff;
+  display:flex;align-items:center;justify-content:center;flex:none;
+}
+.icon-btn svg{width:16px;height:16px;stroke:var(--text-muted);}
+.icon-btn:hover svg{stroke:var(--navy-800);}
+.icon-btn.danger:hover{border-color:var(--danger);}
+.icon-btn.danger:hover svg{stroke:var(--danger);}
+
+.mode-pill{
+  display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;font-size:12.5px;font-weight:700;
+  letter-spacing:.02em;
+}
+.mode-view{background:#eef2f7;color:var(--text-muted);border:1px solid var(--border);}
+.mode-edit{background:#eafaf1;color:var(--success);border:1px solid #bfe9d3;}
+
+.dropdown{position:relative;display:inline-block;}
+.dropdown-menu{
+  display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--border);
+  border-radius:12px;box-shadow:var(--shadow-lg);min-width:220px;padding:6px;z-index:40;
+}
+.dropdown.open .dropdown-menu{display:block;}
+.dropdown-menu button{
+  width:100%;text-align:left;background:none;border:none;padding:10px 12px;border-radius:8px;font-size:13.5px;
+  display:flex;gap:8px;align-items:center;color:var(--text);
+}
+.dropdown-menu button:hover{background:var(--bg);}
+.dropdown-menu .menu-desc{display:block;font-size:11px;color:var(--text-muted);font-weight:400;margin-top:1px;}
+.dropdown-menu svg{width:15px;height:15px;flex:none;margin-top:2px;stroke:var(--navy-700);}
+
+/* ---------- Main content ---------- */
+main{max-width:1100px;margin:22px auto 0;padding:0 20px;}
+.empty-state{
+  text-align:center;padding:60px 20px;color:var(--text-muted);
+}
+.empty-state svg{width:52px;height:52px;stroke:var(--navy-600);opacity:.5;margin-bottom:12px;}
+.empty-state h3{margin:0 0 6px;color:var(--text);}
+
+.section-card{
+  background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+  margin-bottom:18px; overflow:hidden; border:1px solid var(--border);
+}
+.section-head{
+  display:flex; align-items:center; gap:10px; padding:16px 18px; cursor:pointer;
+  background:linear-gradient(180deg,#fbfcfe,#f5f8fb);
+}
+.section-head .chevron{transition:transform .2s;flex:none;}
+.section-head.collapsed .chevron{transform:rotate(-90deg);}
+.section-head h2{margin:0;font-size:16.5px;font-weight:700;flex:1;color:var(--navy-950);}
+.entry-count{
+  font-size:11.5px;background:var(--navy-900);color:#fff;padding:2px 9px;border-radius:999px;font-weight:700;
+}
+.section-actions{display:flex;gap:6px;flex:none;}
+.section-body{padding:14px 18px 20px;}
+.section-body.collapsed{display:none;}
+
+.entries-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+.entry-card{
+  border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px; background:#fcfdfe;
+  display:flex;flex-direction:column;gap:8px; transition:box-shadow .15s, border-color .15s;
+}
+.entry-card:hover{box-shadow:var(--shadow); border-color:#cfdae6;}
+.entry-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;}
+.entry-top h3{margin:0;font-size:14.5px;font-weight:700;color:var(--navy-950);}
+.entry-actions{display:flex;gap:4px;flex:none;}
+.entry-notes{font-size:13px;color:var(--text-muted);white-space:pre-wrap;line-height:1.45;margin:0;}
+.file-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px;}
+.file-chip{
+  display:flex;align-items:center;gap:6px;background:#eef2f7;border:1px solid var(--border);
+  border-radius:8px;padding:6px 9px;font-size:12px;font-weight:600;color:var(--navy-800);max-width:100%;
+}
+.file-chip svg{width:14px;height:14px;flex:none;stroke:var(--navy-700);}
+.file-chip .fname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;}
+.file-chip .fsize{color:var(--text-muted);font-weight:400;flex:none;}
+.file-chip button{background:none;border:none;padding:0;display:flex;flex:none;}
+.file-chip button svg{width:13px;height:13px;stroke:var(--text-muted);}
+.file-chip:hover{border-color:var(--navy-600);}
+
+.add-entry-card{
+  border:2px dashed #c8d4e0; border-radius:var(--radius-sm); padding:14px;
+  display:flex;align-items:center;justify-content:center;gap:8px;color:var(--navy-700);
+  font-weight:700;font-size:13.5px;min-height:80px;background:transparent;
+}
+.add-entry-card:hover{border-color:var(--gold);background:#fffdf6;}
+
+.section-timestamp{font-size:11px;color:var(--text-muted);margin-top:10px;}
+
+/* ---------- FAB ---------- */
+#fabAddSection{
+  position:fixed; right:22px; bottom:26px; z-index:35;
+  width:58px;height:58px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),#c9a227);
+  box-shadow:0 10px 26px rgba(212,175,55,0.45);
+  display:flex;align-items:center;justify-content:center; border:none;
+}
+#fabAddSection svg{width:26px;height:26px;stroke:var(--navy-950);stroke-width:2.4;}
+#fabAddSection:hover{transform:translateY(-2px);}
+
+/* ---------- Modals ---------- */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(7,20,38,0.55);
+  display:none;align-items:center;justify-content:center;z-index:100;padding:20px;
+  backdrop-filter:blur(2px);
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:#fff;border-radius:18px;max-width:520px;width:100%;max-height:88vh;overflow-y:auto;
+  box-shadow:var(--shadow-lg); padding:24px;
+}
+.modal.wide{max-width:760px;}
+.modal h2{margin:0 0 4px;font-size:18px;color:var(--navy-950);}
+.modal .modal-sub{margin:0 0 18px;font-size:13px;color:var(--text-muted);}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12.5px;font-weight:700;color:var(--navy-800);margin-bottom:5px;}
+.field input[type=text],.field input[type=password],.field input[type=url],.field textarea{
+  width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);font-size:14px;outline:none;
+}
+.field input:focus,.field textarea:focus{border-color:var(--navy-600);}
+.field textarea{resize:vertical;min-height:80px;}
+.field-hint{font-size:11.5px;color:var(--text-muted);margin-top:4px;}
+.file-drop{
+  border:2px dashed #c8d4e0;border-radius:12px;padding:18px;text-align:center;color:var(--text-muted);font-size:13px;
+  cursor:pointer;
+}
+.file-drop:hover{border-color:var(--gold);background:#fffdf6;}
+.attached-list{margin-top:10px;display:flex;flex-direction:column;gap:6px;}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+.modal-close{position:absolute;}
+.modal-head-row{display:flex;justify-content:space-between;align-items:flex-start;}
+.error-msg{color:var(--danger);font-size:12.5px;margin-top:6px;min-height:1px;}
+.warn-box{
+  background:#fff8e6;border:1px solid #f1dfa0;color:#7a5b00;border-radius:10px;padding:10px 12px;font-size:12.5px;
+  margin-bottom:14px;
+}
+hr.sep{border:none;border-top:1px solid var(--border);margin:18px 0;}
+.settings-section h3{font-size:13px;margin:0 0 10px;color:var(--navy-900);text-transform:uppercase;letter-spacing:.04em;}
+.storage-line{font-size:12.5px;color:var(--text-muted);}
+
+/* file viewer */
+#fileViewerModal .modal{max-width:900px;padding:0;overflow:hidden;}
+.viewer-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);}
+.viewer-head h3{margin:0;font-size:14.5px;}
+.viewer-body{padding:0;background:#20242b;min-height:200px;display:flex;align-items:center;justify-content:center;}
+.viewer-body img{max-width:100%;max-height:78vh;display:block;}
+.viewer-body embed,.viewer-body iframe{width:100%;height:78vh;border:none;}
+.viewer-foot{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+
+@media (max-width:640px){
+  .header-stats{width:100%;justify-content:flex-start;margin-left:0;margin-top:10px;}
+  .entries-grid{grid-template-columns:1fr;}
+  .modal{padding:18px;}
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-inner">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M5 8l7-4 7 4"/><path d="M4 14c1 3 4 5 8 5s7-2 8-5"/><circle cx="12" cy="6" r="1.6"/></svg>
+    </div>
+    <div class="brand-text">
+      <h1 id="dbTitleDisplay">Shinkoho Manual Database</h1>
+      <p id="dbSubtitleDisplay">Vessel reference library &middot; view &amp; download only</p>
+    </div>
+    <div class="header-stats">
+      <span class="stat-pill"><b id="statSections">0</b> sections</span>
+      <span class="stat-pill"><b id="statEntries">0</b> entries</span>
+      <span class="stat-pill">Updated <b id="statUpdated">&mdash;</b></span>
+    </div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search manuals & sections...">
+    </div>
+
+    <span class="mode-pill mode-view" id="modePill">Locked &middot; View Only</span>
+    <button class="btn" id="toggleEditBtn" title="Enter edit mode">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Edit Mode
+    </button>
+
+    <div class="dropdown" id="exportDropdown">
+      <button class="btn" id="exportBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+        Export
+      </button>
+      <div class="dropdown-menu">
+        <button id="exportFullBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span>Export Full App (.html)<span class="menu-desc">One file, ready to open — send this to the crew</span></span>
+        </button>
+        <button id="exportDataBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+          <span>Export Data Update (.json)<span class="menu-desc">Smaller file — for Import on existing copies</span></span>
+        </button>
+      </div>
+    </div>
+
+    <button class="btn" id="importBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="M7 14l5-5 5 5"/><path d="M5 3h14"/></svg>
+      Import Update
+    </button>
+    <input type="file" id="importFileInput" accept=".json,.html,.htm" style="display:none">
+
+    <button class="btn" id="checkUpdatesBtn" title="Check the online sync URL for a newer version">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+      Check Updates
+    </button>
+
+    <button class="icon-btn" id="settingsBtn" title="Settings" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 0 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 0 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+</div>
+
+<main>
+  <div id="sectionsContainer"></div>
+  <div class="empty-state" id="emptyState" style="display:none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <h3>No manuals yet</h3>
+    <p id="emptyStateMsg">Unlock Edit Mode and tap the gold + button to add your first section.</p>
+  </div>
+</main>
+
+<button id="fabAddSection" style="display:none;" title="Add Section">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<!-- Section modal -->
+<div class="modal-overlay" id="sectionModal">
+  <div class="modal">
+    <h2 id="sectionModalTitle">Add Section</h2>
+    <p class="modal-sub">A section groups related manuals, e.g. "Main Engine", "Cargo Systems", "Fire Safety".</p>
+    <div class="field">
+      <label>Section Title</label>
+      <input type="text" id="sectionTitleInput" placeholder="e.g. Main Engine Manuals" maxlength="120">
+    </div>
+    <div class="error-msg" id="sectionModalError"></div>
+    <div class="modal-actions">
+      <button class="btn" id="sectionModalCancel">Cancel</button>
+      <button class="btn btn-primary" id="sectionModalSave">Save Section</button>
+    </div>
+  </div>
+</div>
+
+<!-- Entry modal -->
+<div class="modal-overlay" id="entryModal">
+  <div class="modal wide">
+    <h2 id="entryModalTitle">Add Manual Entry</h2>
+    <p class="modal-sub">Give it a name, add notes, and attach scanned PDF pages or photos.</p>
+    <div class="field">
+      <label>Entry Title</label>
+      <input type="text" id="entryTitleInput" placeholder="e.g. Main Engine Operation Manual - Ch.4" maxlength="150">
+    </div>
+    <div class="field">
+      <label>Notes (optional)</label>
+      <textarea id="entryNotesInput" placeholder="Any details, page references, or context..."></textarea>
+    </div>
+    <div class="field">
+      <label>Attach Files (PDF or photo)</label>
+      <div class="file-drop" id="fileDropZone">Tap to choose PDF or image files (you can select multiple)</div>
+      <input type="file" id="entryFileInput" accept="application/pdf,image/*" multiple style="display:none">
+      <div class="field-hint">Videos aren't embedded in this version — keep video files in a separate folder alongside the app for now.</div>
+      <div class="attached-list" id="attachedList"></div>
+    </div>
+    <div class="error-msg" id="entryModalError"></div>
+    <div class="modal-actions">
+      <button class="btn" id="entryModalCancel">Cancel</button>
+      <button class="btn btn-primary" id="entryModalSave">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- File viewer modal -->
+<div class="modal-overlay" id="fileViewerModal">
+  <div class="modal">
+    <div class="viewer-head">
+      <h3 id="viewerFileName">file.pdf</h3>
+      <button class="icon-btn" id="viewerCloseBtn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="viewer-body" id="viewerBody"></div>
+    <div class="viewer-foot">
+      <button class="btn" id="viewerDownloadBtn">Download</button>
+      <button class="btn btn-primary" id="viewerCloseBtn2">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Password modal -->
+<div class="modal-overlay" id="passwordModal">
+  <div class="modal">
+    <h2 id="pwModalTitle">Enter Edit Mode</h2>
+    <p class="modal-sub" id="pwModalSub">Enter the owner password to unlock editing.</p>
+    <div class="field">
+      <label id="pwLabel1">Password</label>
+      <input type="password" id="pwInput1" autocomplete="off">
+    </div>
+    <div class="field" id="pwField2" style="display:none;">
+      <label>Confirm Password</label>
+      <input type="password" id="pwInput2" autocomplete="off">
+    </div>
+    <div class="error-msg" id="pwModalError"></div>
+    <div class="modal-actions">
+      <button class="btn" id="pwModalCancel">Cancel</button>
+      <button class="btn btn-primary" id="pwModalSubmit">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<!-- Generic confirm modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <h2 id="confirmTitle">Are you sure?</h2>
+    <p class="modal-sub" id="confirmMessage" style="margin-bottom:8px;"></p>
+    <div id="confirmExtra"></div>
+    <div class="modal-actions">
+      <button class="btn" id="confirmCancelBtn">Cancel</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h2>Settings</h2>
+    <p class="modal-sub">Owner-only controls.</p>
+
+    <div class="settings-section">
+      <h3>Database Title</h3>
+      <div class="field">
+        <input type="text" id="settingsTitleInput" maxlength="120">
+      </div>
+      <div class="field">
+        <input type="text" id="settingsSubtitleInput" maxlength="150" placeholder="Subtitle (optional)">
+      </div>
+    </div>
+
+    <hr class="sep">
+    <div class="settings-section">
+      <h3>Owner Password</h3>
+      <div class="field"><label>Current Password</label><input type="password" id="settingsOldPw"></div>
+      <div class="field"><label>New Password</label><input type="password" id="settingsNewPw"></div>
+      <div class="field"><label>Confirm New Password</label><input type="password" id="settingsNewPw2"></div>
+      <button class="btn btn-sm" id="changePwBtn">Change Password</button>
+      <div class="error-msg" id="settingsPwError"></div>
+    </div>
+
+    <hr class="sep">
+    <div class="settings-section">
+      <h3>Online Sync URL (optional)</h3>
+      <div class="field">
+        <input type="url" id="syncUrlInput" placeholder="https://.../shinkoho-data.json">
+        <div class="field-hint">Host an exported "Data Update" JSON at this address (e.g. a shared drive link or vessel LAN server). Anyone can click "Check Updates" to pull the latest version.</div>
+      </div>
+      <button class="btn btn-sm" id="saveSyncUrlBtn">Save Sync URL</button>
+    </div>
+
+    <hr class="sep">
+    <div class="settings-section">
+      <h3>Storage</h3>
+      <p class="storage-line" id="storageLine">—</p>
+    </div>
+
+    <hr class="sep">
+    <div class="settings-section">
+      <h3 style="color:var(--danger);">Danger Zone</h3>
+      <button class="btn btn-danger btn-sm" id="clearAllBtn">Erase all data on this device</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="settingsCloseBtn">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Embedded data snapshot: baked in whenever "Export Full App" is used, so a shared copy shows
+     everything immediately with zero setup. Left empty in the original template. -->
+<script id="embeddedData" type="application/json">null</script>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================== Constants ============================== */
+var DB_NAME = "shinkohoManualDB_v1";
+var STORE = "kv";
+var DATA_KEY = "database";
+
+var FILE_ICON_PDF = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
+var FILE_ICON_IMG = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
+var ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>';
+var ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>';
+var ICON_UP = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>';
+var ICON_DOWN = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>';
+var ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+/* ============================== State ============================== */
+var state = {
+  data: null,           // the full database object
+  editUnlocked: false,  // session-only
+  collapsed: {},         // sectionId -> bool (session-only)
+  searchTerm: "",
+  pendingEntryFiles: [], // files staged in the entry modal
+  editingSectionId: null,
+  editingEntryId: null,  // {sectionId, entryId} when editing
+  entryModalSectionId: null
+};
+
+function nowIso(){ return new Date().toISOString(); }
+function uid(){ return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,9); }
+
+function emptyData(){
+  return {
+    meta: {
+      title: "Shinkoho Manual Database",
+      subtitle: "Vessel reference library · view & download only",
+      ownerPasswordHash: "",
+      syncUrl: "",
+      lastUpdated: nowIso(),
+      version: 1
+    },
+    sections: []
+  };
+}
+
+/* ============================== IndexedDB helper ============================== */
+function openDb(){
+  return new Promise(function(resolve, reject){
+    var req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = function(e){
+      var db = e.target.result;
+      if(!db.objectStoreNames.contains(STORE)){
+        db.createObjectStore(STORE);
+      }
+    };
+    req.onsuccess = function(e){ resolve(e.target.result); };
+    req.onerror = function(e){ reject(e.target.error); };
+  });
+}
+
+function idbGet(key){
+  return openDb().then(function(db){
+    return new Promise(function(resolve, reject){
+      var tx = db.transaction(STORE, "readonly");
+      var st = tx.objectStore(STORE);
+      var r = st.get(key);
+      r.onsuccess = function(){ resolve(r.result); };
+      r.onerror = function(e){ reject(e.target.error); };
+    });
+  });
+}
+
+function idbSet(key, value){
+  return openDb().then(function(db){
+    return new Promise(function(resolve, reject){
+      var tx = db.transaction(STORE, "readwrite");
+      var st = tx.objectStore(STORE);
+      var r = st.put(value, key);
+      r.onsuccess = function(){ resolve(); };
+      r.onerror = function(e){ reject(e.target.error); };
+    });
+  });
+}
+
+function idbClear(){
+  return openDb().then(function(db){
+    return new Promise(function(resolve, reject){
+      var tx = db.transaction(STORE, "readwrite");
+      var st = tx.objectStore(STORE);
+      var r = st.clear();
+      r.onsuccess = function(){ resolve(); };
+      r.onerror = function(e){ reject(e.target.error); };
+    });
+  });
+}
+
+/* ============================== Data load/save ============================== */
+function loadInitialData(){
+  return idbGet(DATA_KEY).then(function(stored){
+    if(stored && stored.meta){
+      return stored;
+    }
+    // fall back to embedded snapshot baked into this file
+    var embeddedEl = document.getElementById("embeddedData");
+    var embedded = null;
+    try{
+      var txt = embeddedEl ? embeddedEl.textContent.trim() : "";
+      if(txt && txt !== "null"){ embedded = JSON.parse(txt); }
+    }catch(e){ embedded = null; }
+    var initial = (embedded && embedded.meta) ? embedded : emptyData();
+    return idbSet(DATA_KEY, initial).then(function(){ return initial; });
+  });
+}
+
+function saveData(){
+  state.data.meta.lastUpdated = nowIso();
+  return idbSet(DATA_KEY, state.data).then(function(){
+    syncEmbeddedTag();
+    renderAll();
+  });
+}
+
+function syncEmbeddedTag(){
+  var el = document.getElementById("embeddedData");
+  if(el){ el.textContent = JSON.stringify(state.data); }
+}
+
+/* ============================== Crypto (password hashing) ============================== */
+function sha256Hex(text){
+  var enc = new TextEncoder().encode(text);
+  return crypto.subtle.digest("SHA-256", enc).then(function(buf){
+    var bytes = Array.from(new Uint8Array(buf));
+    return bytes.map(function(b){ return b.toString(16).padStart(2,"0"); }).join("");
+  });
+}
+
+/* ============================== Utility ============================== */
+function escapeHtml(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+  });
+}
+function fmtBytes(n){
+  if(n < 1024) return n + " B";
+  if(n < 1024*1024) return (n/1024).toFixed(1) + " KB";
+  return (n/(1024*1024)).toFixed(1) + " MB";
+}
+function fmtDate(iso){
+  if(!iso) return "—";
+  try{
+    var d = new Date(iso);
+    return d.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}) + " " +
+           d.toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"});
+  }catch(e){ return iso; }
+}
+function fileIcon(mime){
+  return (mime && mime.indexOf("pdf") !== -1) ? FILE_ICON_PDF : FILE_ICON_IMG;
+}
+
+function findSection(id){
+  for(var i=0;i<state.data.sections.length;i++){ if(state.data.sections[i].id === id) return state.data.sections[i]; }
+  return null;
+}
+function findEntry(sectionId, entryId){
+  var sec = findSection(sectionId);
+  if(!sec) return null;
+  for(var i=0;i<sec.entries.length;i++){ if(sec.entries[i].id === entryId) return sec.entries[i]; }
+  return null;
+}
+
+/* ============================== Rendering ============================== */
+function renderAll(){
+  document.getElementById("dbTitleDisplay").textContent = state.data.meta.title || "Manual Database";
+  document.getElementById("docTitle").textContent = state.data.meta.title || "Manual Database";
+  document.getElementById("dbSubtitleDisplay").textContent = state.data.meta.subtitle || "";
+
+  var totalEntries = state.data.sections.reduce(function(acc,s){ return acc + s.entries.length; }, 0);
+  document.getElementById("statSections").textContent = state.data.sections.length;
+  document.getElementById("statEntries").textContent = totalEntries;
+  document.getElementById("statUpdated").textContent = fmtDate(state.data.meta.lastUpdated);
+
+  var modePill = document.getElementById("modePill");
+  var fab = document.getElementById("fabAddSection");
+  var settingsBtn = document.getElementById("settingsBtn");
+  var toggleBtn = document.getElementById("toggleEditBtn");
+  if(state.editUnlocked){
+    modePill.textContent = "Unlocked · Edit Mode";
+    modePill.className = "mode-pill mode-edit";
+    fab.style.display = "flex";
+    settingsBtn.style.display = "flex";
+    toggleBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg> Lock Now';
+  } else {
+    modePill.textContent = "Locked · View Only";
+    modePill.className = "mode-pill mode-view";
+    fab.style.display = "none";
+    settingsBtn.style.display = "none";
+    toggleBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Edit Mode';
+  }
+
+  renderSections();
+}
+
+function sectionMatchesSearch(sec, term){
+  if(!term) return true;
+  term = term.toLowerCase();
+  if(sec.title.toLowerCase().indexOf(term) !== -1) return true;
+  return sec.entries.some(function(en){
+    return en.title.toLowerCase().indexOf(term) !== -1 ||
+           (en.notes||"").toLowerCase().indexOf(term) !== -1 ||
+           en.files.some(function(f){ return f.name.toLowerCase().indexOf(term) !== -1; });
+  });
+}
+function entryMatchesSearch(en, term){
+  if(!term) return true;
+  term = term.toLowerCase();
+  return en.title.toLowerCase().indexOf(term) !== -1 ||
+         (en.notes||"").toLowerCase().indexOf(term) !== -1 ||
+         en.files.some(function(f){ return f.name.toLowerCase().indexOf(term) !== -1; });
+}
+
+function renderSections(){
+  var container = document.getElementById("sectionsContainer");
+  var empty = document.getElementById("emptyState");
+  container.innerHTML = "";
+
+  var term = state.searchTerm.trim();
+  var visibleSections = state.data.sections.filter(function(s){ return sectionMatchesSearch(s, term); });
+
+  if(state.data.sections.length === 0){
+    empty.style.display = "block";
+    document.getElementById("emptyStateMsg").textContent = state.editUnlocked ?
+      "Tap the gold + button to add your first section." :
+      "The owner hasn't added any manuals yet.";
+    return;
+  }
+  if(visibleSections.length === 0 && term){
+    empty.style.display = "block";
+    document.getElementById("emptyStateMsg").textContent = "No manuals match \"" + term + "\".";
+    return;
+  }
+  empty.style.display = "none";
+
+  visibleSections.forEach(function(sec, idx){
+    container.appendChild(renderSectionCard(sec, idx, visibleSections.length, !!term));
+  });
+}
+
+function renderSectionCard(sec, idx, total, searching){
+  var card = document.createElement("div");
+  card.className = "section-card";
+
+  var collapsed = !!state.collapsed[sec.id] && !searching;
+
+  var head = document.createElement("div");
+  head.className = "section-head" + (collapsed ? " collapsed" : "");
+  head.innerHTML =
+    '<span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5c6b7c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>' +
+    '<h2>' + escapeHtml(sec.title) + '</h2>' +
+    '<span class="entry-count">' + sec.entries.length + '</span>';
+
+  var actions = document.createElement("div");
+  actions.className = "section-actions";
+  if(state.editUnlocked){
+    actions.appendChild(iconButton(ICON_UP, "Move up", function(e){ e.stopPropagation(); moveSection(sec.id, -1); }, idx === 0));
+    actions.appendChild(iconButton(ICON_DOWN, "Move down", function(e){ e.stopPropagation(); moveSection(sec.id, 1); }, idx === total-1));
+    actions.appendChild(iconButton(ICON_EDIT, "Rename section", function(e){ e.stopPropagation(); openSectionModal(sec.id); }));
+    actions.appendChild(iconButton(ICON_TRASH, "Delete section", function(e){ e.stopPropagation(); confirmDeleteSection(sec.id); }, false, true));
+  }
+  head.appendChild(actions);
+
+  head.addEventListener("click", function(){
+    state.collapsed[sec.id] = !state.collapsed[sec.id];
+    renderSections();
+  });
+
+  var body = document.createElement("div");
+  body.className = "section-body" + (collapsed ? " collapsed" : "");
+
+  var grid = document.createElement("div");
+  grid.className = "entries-grid";
+
+  var term = state.searchTerm.trim();
+  var visibleEntries = sec.entries.filter(function(en){ return entryMatchesSearch(en, term); });
+
+  visibleEntries.forEach(function(en, eidx){
+    grid.appendChild(renderEntryCard(sec, en, eidx, visibleEntries.length));
+  });
+
+  if(state.editUnlocked){
+    var addCard = document.createElement("button");
+    addCard.className = "add-entry-card";
+    addCard.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Entry';
+    addCard.addEventListener("click", function(){ openEntryModal(sec.id); });
+    grid.appendChild(addCard);
+  }
+
+  body.appendChild(grid);
+  card.appendChild(head);
+  card.appendChild(body);
+  return card;
+}
+
+function renderEntryCard(sec, en, idx, total){
+  var card = document.createElement("div");
+  card.className = "entry-card";
+
+  var top = document.createElement("div");
+  top.className = "entry-top";
+  top.innerHTML = '<h3>' + escapeHtml(en.title) + '</h3>';
+
+  var actions = document.createElement("div");
+  actions.className = "entry-actions";
+  if(state.editUnlocked){
+    actions.appendChild(iconButton(ICON_UP, "Move up", function(){ moveEntry(sec.id, en.id, -1); }, idx === 0));
+    actions.appendChild(iconButton(ICON_DOWN, "Move down", function(){ moveEntry(sec.id, en.id, 1); }, idx === total-1));
+    actions.appendChild(iconButton(ICON_EDIT, "Edit entry", function(){ openEntryModal(sec.id, en.id); }));
+    actions.appendChild(iconButton(ICON_TRASH, "Delete entry", function(){ confirmDeleteEntry(sec.id, en.id); }, false, true));
+  }
+  top.appendChild(actions);
+  card.appendChild(top);
+
+  if(en.notes){
+    var notes = document.createElement("p");
+    notes.className = "entry-notes";
+    notes.textContent = en.notes;
+    card.appendChild(notes);
+  }
+
+  var chips = document.createElement("div");
+  chips.className = "file-chips";
+  en.files.forEach(function(f){
+    var chip = document.createElement("div");
+    chip.className = "file-chip";
+    chip.innerHTML = fileIcon(f.mime) + '<span class="fname" title="'+escapeHtml(f.name)+'">' + escapeHtml(f.name) + '</span><span class="fsize">' + fmtBytes(f.size||0) + '</span>';
+    chip.addEventListener("click", function(){ openFileViewer(f); });
+    chips.appendChild(chip);
+  });
+  if(en.files.length === 0){
+    chips.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">No files attached</span>';
+  }
+  card.appendChild(chips);
+
+  return card;
+}
+
+function iconButton(svg, title, handler, disabled, danger){
+  var b = document.createElement("button");
+  b.className = "icon-btn" + (danger ? " danger" : "");
+  b.title = title;
+  b.innerHTML = svg;
+  b.disabled = !!disabled;
+  if(!disabled) b.addEventListener("click", handler);
+  return b;
+}
+
+/* ============================== Section CRUD ============================== */
+function openSectionModal(sectionId){
+  state.editingSectionId = sectionId || null;
+  document.getElementById("sectionModalTitle").textContent = sectionId ? "Rename Section" : "Add Section";
+  document.getElementById("sectionTitleInput").value = sectionId ? findSection(sectionId).title : "";
+  document.getElementById("sectionModalError").textContent = "";
+  openModal("sectionModal");
+  setTimeout(function(){ document.getElementById("sectionTitleInput").focus(); }, 50);
+}
+function saveSectionModal(){
+  var title = document.getElementById("sectionTitleInput").value.trim();
+  if(!title){
+    document.getElementById("sectionModalError").textContent = "Please enter a section title.";
+    return;
+  }
+  if(state.editingSectionId){
+    findSection(state.editingSectionId).title = title;
+  } else {
+    state.data.sections.push({ id: uid(), title: title, entries: [], createdAt: nowIso() });
+  }
+  closeModal("sectionModal");
+  saveData();
+}
+function moveSection(id, dir){
+  var arr = state.data.sections;
+  var i = arr.findIndex(function(s){ return s.id === id; });
+  var j = i + dir;
+  if(j < 0 || j >= arr.length) return;
+  var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  saveData();
+}
+function confirmDeleteSection(id){
+  var sec = findSection(id);
+  openConfirm(
+    "Delete Section",
+    'Delete "' + sec.title + '" and all ' + sec.entries.length + ' entries inside it? This cannot be undone on this device.',
+    function(){
+      state.data.sections = state.data.sections.filter(function(s){ return s.id !== id; });
+      saveData();
+    }
+  );
+}
+
+/* ============================== Entry CRUD ============================== */
+function openEntryModal(sectionId, entryId){
+  state.entryModalSectionId = sectionId;
+  state.editingEntryId = entryId || null;
+  state.pendingEntryFiles = [];
+  document.getElementById("entryModalError").textContent = "";
+
+  if(entryId){
+    var en = findEntry(sectionId, entryId);
+    document.getElementById("entryModalTitle").textContent = "Edit Manual Entry";
+    document.getElementById("entryTitleInput").value = en.title;
+    document.getElementById("entryNotesInput").value = en.notes || "";
+    state.pendingEntryFiles = en.files.slice();
+  } else {
+    document.getElementById("entryModalTitle").textContent = "Add Manual Entry";
+    document.getElementById("entryTitleInput").value = "";
+    document.getElementById("entryNotesInput").value = "";
+  }
+  renderAttachedList();
+  openModal("entryModal");
+  setTimeout(function(){ document.getElementById("entryTitleInput").focus(); }, 50);
+}
+
+function renderAttachedList(){
+  var list = document.getElementById("attachedList");
+  list.innerHTML = "";
+  state.pendingEntryFiles.forEach(function(f, idx){
+    var chip = document.createElement("div");
+    chip.className = "file-chip";
+    chip.style.justifyContent = "space-between";
+    chip.innerHTML = fileIcon(f.mime) + '<span class="fname" style="max-width:280px;" title="'+escapeHtml(f.name)+'">' + escapeHtml(f.name) + '</span><span class="fsize">' + fmtBytes(f.size||0) + '</span>';
+    var rm = document.createElement("button");
+    rm.innerHTML = ICON_X;
+    rm.title = "Remove";
+    rm.addEventListener("click", function(){
+      state.pendingEntryFiles.splice(idx,1);
+      renderAttachedList();
+    });
+    chip.appendChild(rm);
+    list.appendChild(chip);
+  });
+}
+
+function readFilesToDataUrls(fileList){
+  var files = Array.prototype.slice.call(fileList);
+  return Promise.all(files.map(function(file){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(){
+        resolve({ id: uid(), name: file.name, mime: file.type || "application/octet-stream", size: file.size, dataUrl: reader.result, addedAt: nowIso() });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }));
+}
+
+function saveEntryModal(){
+  var title = document.getElementById("entryTitleInput").value.trim();
+  if(!title){
+    document.getElementById("entryModalError").textContent = "Please enter an entry title.";
+    return;
+  }
+  var notes = document.getElementById("entryNotesInput").value.trim();
+  var sec = findSection(state.entryModalSectionId);
+
+  if(state.editingEntryId){
+    var en = findEntry(state.entryModalSectionId, state.editingEntryId);
+    en.title = title; en.notes = notes; en.files = state.pendingEntryFiles; en.updatedAt = nowIso();
+  } else {
+    sec.entries.push({ id: uid(), title: title, notes: notes, files: state.pendingEntryFiles, createdAt: nowIso() });
+  }
+  closeModal("entryModal");
+  saveData();
+}
+
+function moveEntry(sectionId, entryId, dir){
+  var sec = findSection(sectionId);
+  var arr = sec.entries;
+  var i = arr.findIndex(function(e){ return e.id === entryId; });
+  var j = i + dir;
+  if(j < 0 || j >= arr.length) return;
+  var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  saveData();
+}
+
+function confirmDeleteEntry(sectionId, entryId){
+  var en = findEntry(sectionId, entryId);
+  openConfirm(
+    "Delete Entry",
+    'Delete "' + en.title + '" and its ' + en.files.length + ' attached file(s)?',
+    function(){
+      var sec = findSection(sectionId);
+      sec.entries = sec.entries.filter(function(e){ return e.id !== entryId; });
+      saveData();
+    }
+  );
+}
+
+/* ============================== File viewer ============================== */
+var currentViewerBlobUrl = null;
+function openFileViewer(f){
+  document.getElementById("viewerFileName").textContent = f.name;
+  var body = document.getElementById("viewerBody");
+  body.innerHTML = "";
+  fetch(f.dataUrl).then(function(r){ return r.blob(); }).then(function(blob){
+    if(currentViewerBlobUrl) URL.revokeObjectURL(currentViewerBlobUrl);
+    currentViewerBlobUrl = URL.createObjectURL(blob);
+    if(f.mime && f.mime.indexOf("pdf") !== -1){
+      body.innerHTML = '<embed src="' + currentViewerBlobUrl + '" type="application/pdf">';
+    } else {
+      var img = document.createElement("img");
+      img.src = currentViewerBlobUrl;
+      body.appendChild(img);
+    }
+  });
+  document.getElementById("viewerDownloadBtn").onclick = function(){
+    var a = document.createElement("a");
+    a.href = f.dataUrl; a.download = f.name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  };
+  openModal("fileViewerModal");
+}
+function closeFileViewer(){
+  if(currentViewerBlobUrl){ URL.revokeObjectURL(currentViewerBlobUrl); currentViewerBlobUrl = null; }
+  closeModal("fileViewerModal");
+}
+
+/* ============================== Modal plumbing ============================== */
+function openModal(id){ document.getElementById(id).classList.add("open"); }
+function closeModal(id){ document.getElementById(id).classList.remove("open"); }
+
+function openConfirm(title, message, onConfirm, extraHtml){
+  document.getElementById("confirmTitle").textContent = title;
+  document.getElementById("confirmMessage").textContent = message;
+  document.getElementById("confirmExtra").innerHTML = extraHtml || "";
+  var okBtn = document.getElementById("confirmOkBtn");
+  var newOk = okBtn.cloneNode(true);
+  okBtn.parentNode.replaceChild(newOk, okBtn);
+  newOk.addEventListener("click", function(){ closeModal("confirmModal"); onConfirm(); });
+  openModal("confirmModal");
+}
+
+/* ============================== Edit mode / password ============================== */
+function toggleEditMode(){
+  if(state.editUnlocked){
+    state.editUnlocked = false;
+    renderAll();
+    return;
+  }
+  if(!state.data.meta.ownerPasswordHash){
+    openPasswordModal("setup");
+  } else {
+    openPasswordModal("unlock");
+  }
+}
+
+var pwMode = "unlock";
+function openPasswordModal(mode){
+  pwMode = mode;
+  document.getElementById("pwInput1").value = "";
+  document.getElementById("pwInput2").value = "";
+  document.getElementById("pwModalError").textContent = "";
+  if(mode === "setup"){
+    document.getElementById("pwModalTitle").textContent = "Set Up Owner Password";
+    document.getElementById("pwModalSub").textContent = "This is the first time editing this database. Choose a password that travels with every export — anyone who has it can edit.";
+    document.getElementById("pwLabel1").textContent = "New Password";
+    document.getElementById("pwField2").style.display = "block";
+  } else {
+    document.getElementById("pwModalTitle").textContent = "Enter Edit Mode";
+    document.getElementById("pwModalSub").textContent = "Enter the owner password to unlock editing.";
+    document.getElementById("pwLabel1").textContent = "Password";
+    document.getElementById("pwField2").style.display = "none";
+  }
+  openModal("passwordModal");
+  setTimeout(function(){ document.getElementById("pwInput1").focus(); }, 50);
+}
+
+function submitPasswordModal(){
+  var p1 = document.getElementById("pwInput1").value;
+  var errEl = document.getElementById("pwModalError");
+  if(pwMode === "setup"){
+    var p2 = document.getElementById("pwInput2").value;
+    if(!p1 || p1.length < 4){ errEl.textContent = "Password must be at least 4 characters."; return; }
+    if(p1 !== p2){ errEl.textContent = "Passwords do not match."; return; }
+    sha256Hex(p1).then(function(hash){
+      state.data.meta.ownerPasswordHash = hash;
+      state.editUnlocked = true;
+      closeModal("passwordModal");
+      saveData();
+    });
+  } else {
+    sha256Hex(p1).then(function(hash){
+      if(hash === state.data.meta.ownerPasswordHash){
+        state.editUnlocked = true;
+        closeModal("passwordModal");
+        renderAll();
+      } else {
+        errEl.textContent = "Incorrect password.";
+      }
+    });
+  }
+}
+
+/* ============================== Settings ============================== */
+function openSettings(){
+  document.getElementById("settingsTitleInput").value = state.data.meta.title || "";
+  document.getElementById("settingsSubtitleInput").value = state.data.meta.subtitle || "";
+  document.getElementById("settingsOldPw").value = "";
+  document.getElementById("settingsNewPw").value = "";
+  document.getElementById("settingsNewPw2").value = "";
+  document.getElementById("settingsPwError").textContent = "";
+  document.getElementById("syncUrlInput").value = state.data.meta.syncUrl || "";
+  var size = new Blob([JSON.stringify(state.data)]).size;
+  document.getElementById("storageLine").textContent = "Approx. " + fmtBytes(size) + " stored on this device.";
+  openModal("settingsModal");
+}
+
+function saveTitleSubtitle(){
+  state.data.meta.title = document.getElementById("settingsTitleInput").value.trim() || "Manual Database";
+  state.data.meta.subtitle = document.getElementById("settingsSubtitleInput").value.trim();
+}
+
+function changePassword(){
+  var oldPw = document.getElementById("settingsOldPw").value;
+  var newPw = document.getElementById("settingsNewPw").value;
+  var newPw2 = document.getElementById("settingsNewPw2").value;
+  var errEl = document.getElementById("settingsPwError");
+  sha256Hex(oldPw).then(function(hash){
+    if(hash !== state.data.meta.ownerPasswordHash){ errEl.textContent = "Current password is incorrect."; return; }
+    if(!newPw || newPw.length < 4){ errEl.textContent = "New password must be at least 4 characters."; return; }
+    if(newPw !== newPw2){ errEl.textContent = "New passwords do not match."; return; }
+    sha256Hex(newPw).then(function(nh){
+      state.data.meta.ownerPasswordHash = nh;
+      errEl.style.color = "var(--success)";
+      errEl.textContent = "Password changed.";
+      saveData();
+    });
+  });
+}
+
+function saveSyncUrl(){
+  state.data.meta.syncUrl = document.getElementById("syncUrlInput").value.trim();
+  saveData();
+}
+
+function clearAllData(){
+  openConfirm(
+    "Erase All Data",
+    "This permanently deletes every section and entry stored on THIS device. It does not affect any files you've already exported or shared. This cannot be undone.",
+    function(){
+      state.data = emptyData();
+      state.editUnlocked = false;
+      idbClear().then(function(){ return saveData(); }).then(function(){ closeModal("settingsModal"); });
+    }
+  );
+}
+
+/* ============================== Export ============================== */
+function download(filename, content, mime){
+  var blob = new Blob([content], {type: mime});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+}
+
+function dateStamp(){
+  var d = new Date();
+  function p(n){ return (n<10?"0":"")+n; }
+  return d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes());
+}
+
+function exportDataJson(){
+  syncEmbeddedTag();
+  var payload = JSON.stringify({ kind: "shinkoho-manual-data", exportedAt: nowIso(), data: state.data }, null, 0);
+  download("shinkoho-data-update-" + dateStamp() + ".json", payload, "application/json");
+}
+
+function exportFullApp(){
+  syncEmbeddedTag();
+  var html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+  download("shinkoho-manual-database-" + dateStamp() + ".html", html, "text/html");
+}
+
+/* ============================== Import ============================== */
+function extractDataFromImportedText(text, isHtml){
+  if(isHtml){
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(text, "text/html");
+    var el = doc.getElementById("embeddedData");
+    if(!el) throw new Error("This HTML file doesn't contain an embedded database.");
+    var txt = el.textContent.trim();
+    if(!txt || txt === "null") throw new Error("This HTML file has no data saved in it yet.");
+    var parsed = JSON.parse(txt);
+    if(!parsed.meta) throw new Error("Unrecognized data format.");
+    return parsed;
+  } else {
+    var obj = JSON.parse(text);
+    var d = obj.data || obj; // support both wrapped and raw formats
+    if(!d.meta) throw new Error("Unrecognized data format.");
+    return d;
+  }
+}
+
+function performImport(newData){
+  var mismatch = state.data.meta.ownerPasswordHash && newData.meta.ownerPasswordHash &&
+                 state.data.meta.ownerPasswordHash !== newData.meta.ownerPasswordHash;
+  var msg = "Importing will replace all sections and entries currently on this device with the version dated " +
+            fmtDate(newData.meta.lastUpdated) + ". Your own unsent local changes (if any) will be lost.";
+  var extra = mismatch ? '<div class="warn-box">This update file was not exported by the same owner password as this database. Only import it if you trust its source.</div>' : "";
+  openConfirm("Import Update", msg, function(){
+    state.data = newData;
+    state.editUnlocked = false;
+    saveData();
+  }, extra);
+}
+
+function handleImportFile(file){
+  var isHtml = /\.html?$/i.test(file.name);
+  var reader = new FileReader();
+  reader.onload = function(){
+    try{
+      var newData = extractDataFromImportedText(reader.result, isHtml);
+      performImport(newData);
+    }catch(err){
+      alert("Couldn't read this file as a Shinkoho manual update:\n" + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ============================== Online check-for-updates ============================== */
+function checkForUpdates(){
+  var url = state.data.meta.syncUrl;
+  if(!url){
+    openSettings();
+    alert("No online sync URL is set yet. Add one in Settings, or use Import Update to load a file manually.");
+    return;
+  }
+  var btn = document.getElementById("checkUpdatesBtn");
+  var original = btn.innerHTML;
+  btn.innerHTML = "Checking...";
+  btn.disabled = true;
+  fetch(url, {cache:"no-store"}).then(function(r){
+    if(!r.ok) throw new Error("Server returned " + r.status);
+    return r.text();
+  }).then(function(text){
+    var newData = extractDataFromImportedText(text, false);
+    if(newData.meta.lastUpdated && state.data.meta.lastUpdated && new Date(newData.meta.lastUpdated) <= new Date(state.data.meta.lastUpdated)){
+      alert("You already have the latest version (updated " + fmtDate(state.data.meta.lastUpdated) + ").");
+    } else {
+      performImport(newData);
+    }
+  }).catch(function(err){
+    alert("Couldn't check for updates: " + err.message + "\n\nThis usually means there's no internet connection right now, or the sync URL isn't reachable/publicly downloadable.");
+  }).finally(function(){
+    btn.innerHTML = original;
+    btn.disabled = false;
+  });
+}
+
+/* ============================== Event wiring ============================== */
+function wireEvents(){
+  document.getElementById("searchInput").addEventListener("input", function(e){
+    state.searchTerm = e.target.value;
+    renderSections();
+  });
+
+  document.getElementById("toggleEditBtn").addEventListener("click", toggleEditMode);
+  document.getElementById("fabAddSection").addEventListener("click", function(){ openSectionModal(); });
+
+  document.getElementById("sectionModalCancel").addEventListener("click", function(){ closeModal("sectionModal"); });
+  document.getElementById("sectionModalSave").addEventListener("click", saveSectionModal);
+  document.getElementById("sectionTitleInput").addEventListener("keydown", function(e){ if(e.key==="Enter") saveSectionModal(); });
+
+  document.getElementById("entryModalCancel").addEventListener("click", function(){ closeModal("entryModal"); });
+  document.getElementById("entryModalSave").addEventListener("click", saveEntryModal);
+  document.getElementById("fileDropZone").addEventListener("click", function(){ document.getElementById("entryFileInput").click(); });
+  document.getElementById("entryFileInput").addEventListener("change", function(e){
+    readFilesToDataUrls(e.target.files).then(function(files){
+      state.pendingEntryFiles = state.pendingEntryFiles.concat(files);
+      renderAttachedList();
+      e.target.value = "";
+    });
+  });
+
+  document.getElementById("viewerCloseBtn").addEventListener("click", closeFileViewer);
+  document.getElementById("viewerCloseBtn2").addEventListener("click", closeFileViewer);
+
+  document.getElementById("pwModalCancel").addEventListener("click", function(){ closeModal("passwordModal"); });
+  document.getElementById("pwModalSubmit").addEventListener("click", submitPasswordModal);
+  document.getElementById("pwInput1").addEventListener("keydown", function(e){ if(e.key==="Enter" && pwMode==="unlock") submitPasswordModal(); });
+  document.getElementById("pwInput2").addEventListener("keydown", function(e){ if(e.key==="Enter") submitPasswordModal(); });
+
+  document.getElementById("confirmCancelBtn").addEventListener("click", function(){ closeModal("confirmModal"); });
+
+  document.getElementById("settingsBtn").addEventListener("click", openSettings);
+  document.getElementById("settingsCloseBtn").addEventListener("click", function(){ saveTitleSubtitle(); closeModal("settingsModal"); saveData(); });
+  document.getElementById("changePwBtn").addEventListener("click", changePassword);
+  document.getElementById("saveSyncUrlBtn").addEventListener("click", saveSyncUrl);
+  document.getElementById("clearAllBtn").addEventListener("click", clearAllData);
+
+  var exportDropdown = document.getElementById("exportDropdown");
+  document.getElementById("exportBtn").addEventListener("click", function(e){
+    e.stopPropagation();
+    exportDropdown.classList.toggle("open");
+  });
+  document.addEventListener("click", function(){ exportDropdown.classList.remove("open"); });
+  document.getElementById("exportFullBtn").addEventListener("click", function(){ exportDropdown.classList.remove("open"); exportFullApp(); });
+  document.getElementById("exportDataBtn").addEventListener("click", function(){ exportDropdown.classList.remove("open"); exportDataJson(); });
+
+  document.getElementById("importBtn").addEventListener("click", function(){ document.getElementById("importFileInput").click(); });
+  document.getElementById("importFileInput").addEventListener("change", function(e){
+    if(e.target.files[0]) handleImportFile(e.target.files[0]);
+    e.target.value = "";
+  });
+
+  document.getElementById("checkUpdatesBtn").addEventListener("click", checkForUpdates);
+
+  // click outside a modal's inner box closes it (except during setup flows where cancel is explicit)
+  Array.prototype.forEach.call(document.querySelectorAll(".modal-overlay"), function(overlay){
+    overlay.addEventListener("click", function(e){
+      if(e.target === overlay) overlay.classList.remove("open");
+    });
+  });
+}
+
+/* ============================== Init ============================== */
+function init(){
+  wireEvents();
+  loadInitialData().then(function(data){
+    state.data = data;
+    // sections default to expanded (nothing collapsed) on first render
+    renderAll();
+  });
+}
+
+if(document.readyState === "loading"){
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
+
+})();
+</script>
+</body>
+</html>
