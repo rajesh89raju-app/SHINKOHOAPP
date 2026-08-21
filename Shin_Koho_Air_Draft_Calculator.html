@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>M.V. Shin Koho — Air Draft Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-deep:#08141F;
+    --navy:#0E2233;
+    --panel:#132C40;
+    --panel-2:#183756;
+    --steel:#3D5A73;
+    --gold:#E8A33D;
+    --gold-dim:#8a6a34;
+    --teal:#3FA7A0;
+    --alert:#E1544A;
+    --alert-dim:#5a2622;
+    --ink:#F2EFE9;
+    --ink-dim:#AAC0CE;
+    --ok:#4FBF8B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #163049 0%, var(--navy-deep) 60%);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-tap-highlight-color:transparent;
+    padding-bottom:60px;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:0 16px;}
+
+  /* ---------- side-by-side split (inputs + results together, even on phones) ---------- */
+  .split{
+    display:flex;
+    flex-wrap:nowrap;
+    align-items:flex-start;
+    gap:10px;
+    margin:20px 16px 0;
+  }
+  .split > .panel, .split > .table-card{margin:0;}
+  .split > .panel{flex:0 0 40%;min-width:0;}
+  .split > .table-card{flex:1 1 60%;min-width:0;}
+  @media (max-width:400px){
+    .split{gap:7px;}
+    .split > .panel{flex-basis:42%;}
+  }
+
+  /* ---------- header ---------- */
+  header{
+    padding:34px 16px 22px;
+    text-align:center;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    letter-spacing:.28em;
+    font-size:11px;
+    color:var(--gold);
+    text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  h1{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    font-size:clamp(28px,6vw,44px);
+    letter-spacing:.02em;
+    margin:0;
+    text-transform:uppercase;
+  }
+  h1 span{color:var(--gold);}
+  .sub{color:var(--ink-dim);font-size:14px;margin-top:8px;}
+
+  /* ---------- status banner ---------- */
+  .status{
+    margin:20px 16px 0;
+    border-radius:10px;
+    padding:14px 18px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+    font-weight:700;
+    text-align:center;
+    letter-spacing:.03em;
+    border:1px solid;
+    transition:background .2s,border-color .2s,color .2s;
+  }
+  .status.ok{background:rgba(79,191,139,.12);border-color:var(--ok);color:var(--ok);}
+  .status.bad{background:rgba(225,84,74,.14);border-color:var(--alert);color:#ff9d95;
+    animation:pulse 1.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(225,84,74,.35);}50%{box-shadow:0 0 0 8px rgba(225,84,74,0);}}
+
+  /* ---------- input panel ---------- */
+  .panel{
+    background:linear-gradient(180deg,var(--panel),var(--navy));
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:14px;
+    padding:14px 12px 16px;
+    box-shadow:0 20px 40px -20px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .panel-title{
+    font-family:'Oswald',sans-serif;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    margin-bottom:12px;
+    display:flex;align-items:center;gap:7px;
+  }
+  .panel-title::before{content:'';width:7px;height:7px;flex:0 0 auto;border-radius:50%;background:var(--gold);box-shadow:0 0 8px var(--gold);}
+
+  .input-grid{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .field{
+    background:var(--navy-deep);
+    border:1.5px solid var(--steel);
+    border-radius:12px;
+    padding:9px 10px 8px;
+    position:relative;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .field:focus-within{border-color:var(--gold);box-shadow:0 0 0 3px rgba(232,163,61,.18);}
+  .field label{
+    display:block;
+    font-size:9.5px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    margin-bottom:4px;
+    font-weight:600;
+    line-height:1.25;
+  }
+  .field .row{display:flex;align-items:baseline;gap:6px;}
+  .field input{
+    width:100%;
+    min-width:0;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:var(--ink);
+    font-family:'JetBrains Mono',monospace;
+    font-size:22px;
+    font-weight:700;
+    padding:2px 0;
+    -moz-appearance:textfield;
+  }
+  .field input::-webkit-outer-spin-button,
+  .field input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .field .unit{font-size:12px;color:var(--ink-dim);font-family:'JetBrains Mono',monospace;}
+  .field.limit{border-color:var(--gold-dim);}
+  .field.limit input{color:var(--gold);}
+
+  details.adv{margin-top:12px;}
+  details.adv summary{
+    cursor:pointer;font-size:10.5px;color:var(--ink-dim);
+    letter-spacing:.04em;text-transform:uppercase;
+    list-style:none;
+    line-height:1.4;
+  }
+  details.adv summary::-webkit-details-marker{display:none;}
+  details.adv summary::before{content:'▸ ';color:var(--gold);}
+  details.adv[open] summary::before{content:'▾ ';}
+  .adv-grid{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+  .adv-grid .field{padding:7px 10px;}
+  .adv-grid .field input{font-size:16px;}
+
+  /* ---------- diagram ---------- */
+  .diagram-card{
+    margin:24px 16px 0;
+    background:linear-gradient(180deg,#0c2033,#081522);
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:16px;
+    padding:18px 8px 10px;
+    overflow-x:auto;
+  }
+  .diagram-card .panel-title{padding:0 12px;}
+  svg{display:block;min-width:760px;width:100%;height:auto;}
+  .hull{fill:#1c3a52;stroke:#4a6d87;stroke-width:1.5;}
+  .deck-line{stroke:#4a6d87;stroke-width:1;}
+  .waterline{stroke:var(--teal);stroke-width:2.5;stroke-dasharray:0;}
+  .sea{fill:url(#seaGrad);}
+  .keel-tick{stroke:#4a6d87;stroke-width:1;}
+  .marker-line{stroke-width:2.5;transition:stroke .2s;}
+  .marker-dot{r:4;transition:fill .2s;}
+  .marker-label{font-family:'JetBrains Mono',monospace;font-size:10.5px;text-anchor:middle;}
+  .marker-label .nm{fill:var(--ink-dim);font-size:9px;}
+  .marker-label .ad{font-weight:700;}
+  .draft-tag{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;fill:var(--teal);}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;padding:10px 16px 4px;font-size:11px;color:var(--ink-dim);font-family:'JetBrains Mono',monospace;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .swatch{width:10px;height:10px;border-radius:2px;display:inline-block;}
+
+  /* ---------- table ---------- */
+  .table-card{
+    background:var(--panel);
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:14px;
+    padding:12px 0 4px;
+    max-height:520px;
+    overflow-y:auto;
+    overflow-x:auto;
+  }
+  .table-card .panel-title{padding:0 10px;}
+  table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;}
+  thead th{
+    text-align:left;
+    font-size:8.5px;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    padding:6px 6px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    font-weight:600;
+    position:sticky;top:0;
+    background:var(--panel);
+  }
+  thead th.num, tbody td.num{text-align:right;}
+  tbody td{padding:7px 6px;font-size:11px;line-height:1.25;border-bottom:1px solid rgba(255,255,255,.04);white-space:nowrap;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr.over td{color:#ff9d95;background:rgba(225,84,74,.08);}
+  tbody tr.over td.name::after{content:' ⚠';}
+  tbody td.name{font-family:'Inter',sans-serif;font-weight:500;color:var(--ink);white-space:normal;}
+  .mast-row td{color:var(--gold);}
+  @media (max-width:400px){
+    tbody td{font-size:9.5px;padding:5px 4px;}
+    thead th{font-size:7.5px;padding:5px 4px;}
+  }
+
+  /* ---------- hold averages ---------- */
+  .holds-card{
+    margin:24px 16px 0;
+    background:var(--panel);
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:16px;
+    padding:18px 18px 20px;
+  }
+  .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:6px;}
+  .chip{
+    background:var(--navy-deep);
+    border:1.5px solid var(--steel);
+    border-radius:12px;
+    padding:10px 12px;
+    text-align:center;
+  }
+  .chip.over{border-color:var(--alert);background:rgba(225,84,74,.12);}
+  .chip .cname{font-size:11px;color:var(--ink-dim);letter-spacing:.06em;}
+  .chip .cval{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;margin-top:4px;}
+  .chip.over .cval{color:#ff9d95;}
+  .chip:not(.over) .cval{color:var(--teal);}
+
+  footer{text-align:center;color:var(--ink-dim);font-size:11px;padding:28px 16px 0;font-family:'JetBrains Mono',monospace;letter-spacing:.05em;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Bulk Carrier &nbsp;·&nbsp; Air Draft Instrument</div>
+  <h1>M.V. Shin <span>Koho</span></h1>
+  <div class="sub">Enter your fore &amp; aft drafts — every mast, hatch coaming and hold updates live</div>
+</header>
+
+<div class="wrap">
+
+  <div id="statusBanner" class="status ok">ALL CLEAR — no point exceeds the limit</div>
+
+  <div class="split">
+    <div class="panel">
+      <div class="panel-title">Live Inputs</div>
+      <div class="input-grid">
+        <div class="field">
+          <label for="fwdDraft">Fwd Draft</label>
+          <div class="row"><input id="fwdDraft" type="number" inputmode="decimal" step="0.01" value="9.00"><span class="unit">m</span></div>
+        </div>
+        <div class="field">
+          <label for="aftDraft">Aft Draft</label>
+          <div class="row"><input id="aftDraft" type="number" inputmode="decimal" step="0.01" value="10.00"><span class="unit">m</span></div>
+        </div>
+        <div class="field limit">
+          <label for="maxLimit">Max A.D. Limit</label>
+          <div class="row"><input id="maxLimit" type="number" inputmode="decimal" step="0.01" value="45.00"><span class="unit">m</span></div>
+        </div>
+      </div>
+
+      <details class="adv">
+        <summary>Advanced: frames</summary>
+        <div class="adv-grid">
+          <div class="field">
+            <label for="foreFrame">Fore Frame No.</label>
+            <div class="row"><input id="foreFrame" type="number" inputmode="decimal" step="1" value="290"></div>
+          </div>
+          <div class="field">
+            <label for="aftFrame">Aft Frame No.</label>
+            <div class="row"><input id="aftFrame" type="number" inputmode="decimal" step="1" value="30"></div>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="table-card">
+      <div class="panel-title">Name · Height · A.D.</div>
+      <table>
+        <thead><tr>
+          <th>Name</th>
+          <th class="num">Ht (m)</th>
+          <th class="num">A.D. (m)</th>
+        </tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="diagram-card">
+    <div class="panel-title">Side Profile</div>
+    <svg id="shipSvg" viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="seaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0c3547"/>
+          <stop offset="100%" stop-color="#08141F"/>
+        </linearGradient>
+      </defs>
+      <!-- sea -->
+      <rect class="sea" x="0" y="300" width="900" height="100"/>
+      <!-- hull silhouette (static decorative) -->
+      <path class="hull" d="M 60 300 L 60 260 Q 60 250 72 250 L 790 250 Q 850 250 878 292 L 878 300 Z"/>
+      <!-- deckline -->
+      <line class="deck-line" x1="60" y1="250" x2="878" y2="250"/>
+      <g id="markersLayer"></g>
+      <!-- waterline drawn dynamically -->
+      <line id="waterline" class="waterline" x1="40" y1="300" x2="898" y2="300"/>
+      <text id="fwdTag" class="draft-tag" x="870" y="0" text-anchor="end"></text>
+      <text id="aftTag" class="draft-tag" x="30" y="0" text-anchor="start"></text>
+    </svg>
+    <div class="legend">
+      <span><i class="swatch" style="background:var(--teal)"></i>Waterline (fwd/aft trim)</span>
+      <span><i class="swatch" style="background:var(--gold)"></i>Within limit</span>
+      <span><i class="swatch" style="background:var(--alert)"></i>Exceeds limit</span>
+    </div>
+  </div>
+
+  <div class="holds-card">
+    <div class="panel-title">Average Air Draft per Cargo Hold</div>
+    <div class="chips" id="holdChips"></div>
+  </div>
+
+  <footer>M.V. SHIN KOHO &nbsp;·&nbsp; Fore frame &amp; aft frame per vessel particulars &nbsp;·&nbsp; For onboard planning reference only</footer>
+</div>
+
+<script>
+// ---- point data (name, frame no., height above keel in m) ----
+const rawPoints = [
+  {name:'FORE MAST',        frame:290, height:38.5, type:'mast'},
+  {name:'NO.1 H.C. (fore)', frame:277, height:27.5, type:'hold', hold:1},
+  {name:'NO.1 H.C. (aft)',  frame:262, height:27.5, type:'hold', hold:1},
+  {name:'NO.2 H.C. (fore)', frame:251, height:27.5, type:'hold', hold:2},
+  {name:'NO.2 H.C. (aft)',  frame:235, height:27.5, type:'hold', hold:2},
+  {name:'NO.3 H.C. (fore)', frame:224, height:27.5, type:'hold', hold:3},
+  {name:'NO.3 H.C. (aft)',  frame:208, height:27.5, type:'hold', hold:3},
+  {name:'NO.4 H.C. (fore)', frame:197, height:27.5, type:'hold', hold:4},
+  {name:'NO.4 H.C. (aft)',  frame:181, height:27.5, type:'hold', hold:4},
+  {name:'NO.5 H.C. (fore)', frame:170, height:27.5, type:'hold', hold:5},
+  {name:'NO.5 H.C. (aft)',  frame:154, height:27.5, type:'hold', hold:5},
+  {name:'NO.6 H.C. (fore)', frame:143, height:27.5, type:'hold', hold:6},
+  {name:'NO.6 H.C. (aft)',  frame:127, height:27.5, type:'hold', hold:6},
+  {name:'NO.7 H.C. (fore)', frame:116, height:27.5, type:'hold', hold:7},
+  {name:'NO.7 H.C. (aft)',  frame:100, height:27.5, type:'hold', hold:7},
+  {name:'NO.8 H.C. (fore)', frame:89,  height:27.5, type:'hold', hold:8},
+  {name:'NO.8 H.C. (aft)',  frame:73,  height:27.5, type:'hold', hold:8},
+  {name:'NO.9 H.C. (fore)', frame:62,  height:27.5, type:'hold', hold:9},
+  {name:'NO.9 H.C. (aft)',  frame:46,  height:27.5, type:'hold', hold:9},
+  {name:'RADAR MAST',       frame:30,  height:56.8, type:'mast'},
+];
+
+const $ = id => document.getElementById(id);
+const fwdInput = $('fwdDraft'), aftInput = $('aftDraft'), limitInput = $('maxLimit');
+const foreFrameInput = $('foreFrame'), aftFrameInput = $('aftFrame');
+
+function interpolatedDraft(frame, fwdDraft, aftDraft, foreFrame, aftFrame){
+  return aftDraft + (fwdDraft - aftDraft) * (frame - aftFrame) / (foreFrame - aftFrame);
+}
+
+// ---- SVG geometry ----
+const FRAME_MIN = 0, FRAME_MAX = 300;
+const PLOT_LEFT = 90, PLOT_RIGHT = 850;
+const BASELINE_Y = 300;      // keel datum (sea surface baseline in SVG coords)
+const PX_PER_M = 4.1;        // vertical scale
+
+function xForFrame(frame){
+  return PLOT_LEFT + (frame - FRAME_MIN) / (FRAME_MAX - FRAME_MIN) * (PLOT_RIGHT - PLOT_LEFT);
+}
+function yForHeight(h){
+  return BASELINE_Y - h * PX_PER_M;
+}
+
+function calc(){
+  const fwd = parseFloat(fwdInput.value) || 0;
+  const aft = parseFloat(aftInput.value) || 0;
+  const limit = parseFloat(limitInput.value) || 0;
+  const foreFrame = parseFloat(foreFrameInput.value) || 290;
+  const aftFrame = parseFloat(aftFrameInput.value) || 30;
+
+  const results = rawPoints.map(p => {
+    const draft = interpolatedDraft(p.frame, fwd, aft, foreFrame, aftFrame);
+    const airDraft = p.height - draft;
+    return {...p, draft, airDraft, over: airDraft > limit};
+  });
+
+  // ---- table ----
+  const tbody = $('tableBody');
+  tbody.innerHTML = '';
+  let anyOver = false;
+  results.forEach(r => {
+    if (r.over) anyOver = true;
+    const tr = document.createElement('tr');
+    tr.className = (r.over ? 'over ' : '') + (r.type === 'mast' ? 'mast-row' : '');
+    tr.innerHTML = `<td class="name">${r.name}</td><td class="num">${r.height.toFixed(2)}</td><td class="num">${r.airDraft.toFixed(2)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // ---- status banner ----
+  const banner = $('statusBanner');
+  if (anyOver){
+    banner.className = 'status bad';
+    const worst = results.reduce((a,b) => (a.airDraft - limit) > (b.airDraft - limit) ? a : b);
+    banner.textContent = `⚠ AIR DRAFT LIMIT EXCEEDED — worst case: ${worst.name} at ${worst.airDraft.toFixed(2)} m (limit ${limit.toFixed(2)} m)`;
+  } else {
+    banner.className = 'status ok';
+    banner.textContent = `ALL CLEAR — no point exceeds the ${limit.toFixed(2)} m limit`;
+  }
+
+  // ---- hold averages ----
+  const holdsMap = {};
+  results.filter(r => r.type === 'hold').forEach(r => {
+    if(!holdsMap[r.hold]) holdsMap[r.hold] = [];
+    holdsMap[r.hold].push(r.airDraft);
+  });
+  const chipsEl = $('holdChips');
+  chipsEl.innerHTML = '';
+  Object.keys(holdsMap).sort((a,b)=>a-b).forEach(h => {
+    const vals = holdsMap[h];
+    const avg = vals.reduce((s,v)=>s+v,0) / vals.length;
+    const over = avg > limit;
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (over ? ' over' : '');
+    chip.innerHTML = `<div class="cname">NO.${h} HOLD</div><div class="cval">${avg.toFixed(2)} m</div>`;
+    chipsEl.appendChild(chip);
+  });
+
+  drawDiagram(results, fwd, aft, foreFrame, aftFrame, limit);
+}
+
+function drawDiagram(results, fwd, aft, foreFrame, aftFrame, limit){
+  // waterline: sloped from aft frame/draft to fore frame/draft
+  const x1 = xForFrame(aftFrame - 20), y1 = yForHeight(-interpolatedDraft(aftFrame-20, fwd, aft, foreFrame, aftFrame));
+  const x2 = xForFrame(foreFrame + 10), y2 = yForHeight(-interpolatedDraft(foreFrame+10, fwd, aft, foreFrame, aftFrame));
+  const wl = $('waterline');
+  wl.setAttribute('x1', x1); wl.setAttribute('y1', y1);
+  wl.setAttribute('x2', x2); wl.setAttribute('y2', y2);
+
+  const fwdTag = $('fwdTag');
+  fwdTag.setAttribute('x', xForFrame(foreFrame));
+  fwdTag.setAttribute('y', y2 + 18);
+  fwdTag.textContent = `FWD ${fwd.toFixed(2)}m`;
+
+  const aftTag = $('aftTag');
+  aftTag.setAttribute('x', xForFrame(aftFrame));
+  aftTag.setAttribute('y', y1 + 18);
+  aftTag.textContent = `AFT ${aft.toFixed(2)}m`;
+
+  // condensed marker set: masts individually, holds collapsed to midpoint of fore/aft pair
+  const markers = [];
+  results.filter(r => r.type === 'mast').forEach(r => markers.push({label:r.name.replace(' MAST',''), frame:r.frame, height:r.height, airDraft:r.airDraft, draftAt:r.draft, over:r.over}));
+  const holdsMap = {};
+  results.filter(r => r.type === 'hold').forEach(r => {
+    if(!holdsMap[r.hold]) holdsMap[r.hold] = {frames:[], heights:[], airDrafts:[], drafts:[]};
+    holdsMap[r.hold].frames.push(r.frame);
+    holdsMap[r.hold].heights.push(r.height);
+    holdsMap[r.hold].airDrafts.push(r.airDraft);
+    holdsMap[r.hold].drafts.push(r.draft);
+  });
+  Object.keys(holdsMap).forEach(h => {
+    const g = holdsMap[h];
+    const midFrame = (g.frames[0] + g.frames[1]) / 2;
+    const avgHeight = (g.heights[0] + g.heights[1]) / 2;
+    const avgAirDraft = (g.airDrafts[0] + g.airDrafts[1]) / 2;
+    const avgDraft = (g.drafts[0] + g.drafts[1]) / 2;
+    markers.push({label:'H'+h, frame:midFrame, height:avgHeight, airDraft:avgAirDraft, draftAt:avgDraft, over: avgAirDraft > limit});
+  });
+  markers.sort((a,b) => a.frame - b.frame);
+
+  const layer = $('markersLayer');
+  layer.innerHTML = '';
+  markers.forEach((m, i) => {
+    const x = xForFrame(m.frame);
+    const topY = yForHeight(m.height);
+    const waterY = yForHeight(-m.draftAt);
+    const color = m.over ? 'var(--alert)' : 'var(--gold)';
+    const stagger = (i % 2 === 0) ? 0 : 16;
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('class','marker-line');
+    line.setAttribute('x1', x); line.setAttribute('y1', topY);
+    line.setAttribute('x2', x); line.setAttribute('y2', waterY);
+    line.setAttribute('stroke', color);
+    layer.appendChild(line);
+
+    const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('class','marker-dot');
+    dot.setAttribute('cx', x); dot.setAttribute('cy', topY);
+    dot.setAttribute('fill', color);
+    layer.appendChild(dot);
+
+    const labelY = Math.max(20, topY - 26 - stagger);
+    const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+    text.setAttribute('class','marker-label');
+    text.setAttribute('x', x); text.setAttribute('y', labelY);
+    text.innerHTML = `<tspan class="nm" x="${x}" dy="0">${m.label}</tspan><tspan class="ad" x="${x}" dy="12" fill="${color}">${m.airDraft.toFixed(2)}m</tspan>`;
+    layer.appendChild(text);
+
+    const connector = document.createElementNS('http://www.w3.org/2000/svg','line');
+    connector.setAttribute('x1', x); connector.setAttribute('y1', labelY + 6);
+    connector.setAttribute('x2', x); connector.setAttribute('y2', topY - 4);
+    connector.setAttribute('stroke', color);
+    connector.setAttribute('stroke-width', '1');
+    connector.setAttribute('stroke-dasharray', '2,2');
+    connector.setAttribute('opacity', '0.5');
+    layer.appendChild(connector);
+  });
+}
+
+[fwdInput, aftInput, limitInput, foreFrameInput, aftFrameInput].forEach(el => {
+  el.addEventListener('input', calc);
+});
+
+calc();
+</script>
+</body>
+</html>
