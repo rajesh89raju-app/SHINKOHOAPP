@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Load Plan — Quick Entry</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --navy:#0B2545; --steel:#1D4E89; --steel-light:#E7EEF6;
+    --line:#C9D2DC; --line-strong:#9FAFC0; --ink:#12202E; --ink-soft:#4C5C6C;
+    --bg:#F5F7FA; --white:#FFFFFF; --danger:#B3261E; --danger-bg:#FBEAE9;
+    --calc-bg:#FBF1E2; --calc-ink:#5a3c0f; --diff-bg:#EFEAFB; --diff-ink:#3C3489;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:14px; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  h1{font-size:17px; font-weight:700; color:var(--navy); margin:0 0 3px;}
+  .sub{font-size:12.5px; color:var(--ink-soft); margin:0 0 14px;}
+
+  .topbar{ position:sticky; top:0; z-index:5; background:var(--bg); padding:10px 0 12px; display:flex; gap:8px; }
+  button{
+    font-family:inherit; font-size:14px; font-weight:700; border-radius:8px;
+    border:1px solid var(--line-strong); background:var(--white); color:var(--ink);
+    padding:12px 16px; cursor:pointer;
+  }
+  button.primary{background:var(--steel); color:#fff; border-color:var(--steel); flex:1;}
+  button.primary:active{background:var(--navy);}
+  button.small{padding:6px 10px; font-size:13px; font-weight:600;}
+  button.danger{color:var(--danger); border-color:#E3AFAB;}
+  button.toggle{width:100%; text-align:left; background:var(--steel-light); border-color:var(--line); margin-bottom:8px;}
+
+  .card{ background:var(--white); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:14px; }
+  .card .cardhead{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .card .cardhead .steplabel{font-weight:700; color:var(--navy); font-size:15px;}
+
+  .summarybox{
+    background:var(--diff-bg); color:var(--diff-ink); border-radius:8px; padding:8px 10px;
+    font-size:12.5px; margin-bottom:10px; line-height:1.4;
+  }
+
+  .fieldrow{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;}
+  .field{display:flex; flex-direction:column; gap:4px;}
+  .field.full{grid-column:1/-1;}
+  .field label{font-size:11.5px; color:var(--ink-soft); font-weight:600;}
+  .field input, .field select{
+    border:1px solid var(--line); border-radius:8px; padding:11px 10px; font-size:16px;
+    font-family:inherit; background:var(--white); color:var(--ink); width:100%;
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--steel); outline-offset:-1px;}
+  .field.calc input{background:var(--calc-bg); color:var(--calc-ink); font-weight:700;}
+
+  .sectionlabel{ font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--steel); font-weight:700; margin:12px 0 6px; }
+
+  .taskgrid{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:6px;}
+  .taskgrid .field label{font-size:11px;}
+  .taskgrid .field input{padding:8px 6px; font-size:14px; text-align:center;}
+
+  .ballastgrid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:6px;}
+  .ballastgrid .field label{font-size:11px;}
+  .ballastgrid .field input{padding:8px 6px; font-size:14px; text-align:center;}
+
+  .initial-card{background:var(--steel-light); border-color:var(--line-strong);}
+
+  .comparewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--white); margin-bottom:16px;}
+  table{border-collapse:collapse; width:100%;}
+  table th, table td{ border:1px solid var(--line); padding:7px 9px; font-size:12.5px; text-align:center; white-space:nowrap; }
+  table th.rowlabel, table td.rowlabel{
+    position:sticky; left:0; background:var(--steel-light); text-align:left; font-weight:600;
+    color:var(--ink-soft); z-index:2;
+  }
+  table thead th{background:var(--navy); color:#fff; font-weight:700;}
+  table thead th.rowlabel{background:var(--navy); color:#fff;}
+  tr.sectionrow td{background:#EFF3F7; font-weight:700; color:var(--steel); text-align:left; position:sticky; left:0;}
+
+  .empty{padding:20px; text-align:center; color:var(--ink-soft); font-size:13px;}
+  .footer{display:flex; gap:10px; margin-top:6px; margin-bottom:30px;}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+
+<h1>Load plan — quick entry</h1>
+<p class="sub">Type in what you're loading and any ballast change per pour. Trim, and what changed since last pour, work themselves out — everything lines up in the comparison table at the bottom.</p>
+
+<div class="card initial-card" id="initialCard">
+  <div class="cardhead"><span class="steplabel">Initial condition (Pour 0)</span></div>
+  <div class="fieldrow">
+    <div class="field"><label>Fwd draft (M)</label><input type="number" inputmode="decimal" step="0.01" id="i0_fwd"></div>
+    <div class="field"><label>Aft draft (M)</label><input type="number" inputmode="decimal" step="0.01" id="i0_aft"></div>
+    <div class="field calc"><label>Trim (M) — auto</label><input type="text" id="i0_trim" readonly></div>
+    <div class="field"><label>GM (M)</label><input type="number" inputmode="decimal" step="0.01" id="i0_gm"></div>
+    <div class="field"><label>Air draft (M)</label><input type="number" inputmode="decimal" step="0.01" id="i0_air"></div>
+    <div class="field"><label>Max BM %</label><input type="number" inputmode="decimal" step="0.01" id="i0_bm"></div>
+    <div class="field"><label>Max SF %</label><input type="number" inputmode="decimal" step="0.01" id="i0_sf"></div>
+  </div>
+  <button class="toggle small" id="i0_toggleCargo">▸ Cargo holds (tonnes in each hold right now)</button>
+  <div class="taskgrid hidden" id="i0_cargoGrid"></div>
+  <button class="toggle small" id="i0_toggleBallast">▸ Ballast tanks (% full right now)</button>
+  <div class="ballastgrid hidden" id="i0_ballastGrid"></div>
+</div>
+
+<div class="topbar">
+  <button class="primary" id="addStepBtn">+ Add step</button>
+</div>
+
+<div id="stepsContainer"></div>
+<div id="emptySteps" class="empty">No steps yet — tap "+ Add step" to begin.</div>
+
+<div class="sectionlabel">Side-by-side comparison</div>
+<div class="comparewrap"><table id="compareTable"></table></div>
+
+<div class="footer">
+  <button class="primary" id="exportBtn">Download Excel</button>
+</div>
+
+<script>
+const CARGO_TANKS = [1,2,3,4,5,6,7,8,9].map(n => 'NO.'+n+' CARGO HOLD');
+const BALLAST_TANKS = [
+  'F.P.T.',
+  ...[1,2,3,4,5,6,7,8].flatMap(n => ['NO.'+n+' W.B.T.(P)', 'NO.'+n+' W.B.T.(S)']),
+  'NO.9 UPPER W.B.T.(P)', 'NO.9 UPPER W.B.T.(S)',
+  'NO.9 LOWER W.B.T.(P)', 'NO.9 LOWER W.B.T.(S)',
+  'A.P.T.'
+];
+
+function shortHoldLabel(name){ const m = name.match(/NO\.(\d+)/); return m ? 'H'+m[1] : name; }
+function shortBallastLabel(name){
+  return name.replace('F.P.T.','FPT').replace('A.P.T.','APT')
+    .replace(/NO\.(\d+) W\.B\.T\.\(([PS])\)/, 'W$1($2)')
+    .replace(/NO\.9 (UPPER|LOWER) W\.B\.T\.\(([PS])\)/, (m,p1,p2)=> (p1==='UPPER'?'W9U':'W9L')+'('+p2+')');
+}
+
+let steps = [];
+let seq = 0;
+
+function emptyCargo(){ const o={}; CARGO_TANKS.forEach(t=>o[t]=''); return o; }
+function emptyBallast(){ const o={}; BALLAST_TANKS.forEach(t=>o[t]=''); return o; }
+
+function newStep(){
+  seq += 1;
+  return {
+    id: seq, grade:'', timeReq:'', comments:'',
+    fwd:'', aft:'', gm:'', airDraft:'', bm:'', sf:'',
+    cargo: emptyCargo(), ballast: emptyBallast()
+  };
+}
+
+let initialCargo = emptyCargo();
+let initialBallast = emptyBallast();
+
+function numOrBlank(v){
+  if(v === '' || v === null || v === undefined) return '';
+  const n = parseFloat(v);
+  return isNaN(n) ? '' : n;
+}
+
+function trimOf(fwd, aft){
+  if(fwd === '' || aft === '' || fwd === null || aft === null) return '';
+  const t = (parseFloat(aft) - parseFloat(fwd));
+  return t.toFixed(2) + (t >= 0 ? ' (A)' : ' (F)');
+}
+
+function cargoDiff(prev, cur){
+  const changes = [];
+  CARGO_TANKS.forEach(t => {
+    const p = parseFloat(prev[t]), c = parseFloat(cur[t]);
+    if(isNaN(p) || isNaN(c)) return;
+    const delta = c - p;
+    if(Math.abs(delta) >= 1) changes.push({ tank:t, delta });
+  });
+  return changes;
+}
+
+function ballastDiff(prev, cur){
+  const changes = [];
+  BALLAST_TANKS.forEach(t => {
+    const p = parseFloat(prev[t]), c = parseFloat(cur[t]);
+    if(isNaN(p) || isNaN(c)) return;
+    const delta = c - p;
+    if(Math.abs(delta) >= 0.5) changes.push({ tank:t, prev:p, cur:c, delta });
+  });
+  return changes;
+}
+
+function describeBallast(changes){
+  return changes.map(c => {
+    const label = shortBallastLabel(c.tank);
+    if(c.cur <= 2 && c.delta < 0) return label + ' emptied (was ' + c.prev + '%)';
+    if(c.delta < 0) return label + ' → ' + c.cur + '% (from ' + c.prev + '%, pumped out)';
+    return label + ' → ' + c.cur + '% (from ' + c.prev + '%, ballasted)';
+  }).join('; ');
+}
+
+function summaryFor(step, prevCargo, prevBallast){
+  const cChanges = cargoDiff(prevCargo, step.cargo);
+  const bChanges = ballastDiff(prevBallast, step.ballast);
+  const parts = [];
+  if(cChanges.length){
+    parts.push('Loading: ' + cChanges.map(c => shortHoldLabel(c.tank) + ' ' + (c.delta>0?'+':'') + Math.round(c.delta) + ' MT').join(', '));
+  } else {
+    parts.push('Loading: no cargo change detected — fill hold tonnes below.');
+  }
+  if(bChanges.length){
+    parts.push('Ballast: ' + describeBallast(bChanges));
+  }
+  return { text: parts.join('  ·  '), holdLabel: cChanges.map(c=>shortHoldLabel(c.tank).replace('H','')).join('+'),
+            tonnes: Math.round(cChanges.reduce((s,c)=>s+c.delta,0)), ballastText: bChanges.length ? describeBallast(bChanges) : '' };
+}
+
+function prevCargoBallastFor(idx){
+  for(let i=idx-1;i>=0;i--){
+    return { cargo: steps[i].cargo, ballast: steps[i].ballast };
+  }
+  return { cargo: initialCargo, ballast: initialBallast };
+}
+
+function buildGrid(container, dataObj, labelFn, tankList, onChange){
+  container.innerHTML = '';
+  tankList.forEach(t => {
+    const f = document.createElement('div'); f.className = 'field';
+    const lbl = document.createElement('label'); lbl.textContent = labelFn(t);
+    const inp = document.createElement('input');
+    inp.type = 'number'; inp.inputMode = 'decimal'; inp.step = '0.1';
+    inp.value = dataObj[t];
+    inp.addEventListener('input', e => { dataObj[t] = numOrBlank(e.target.value); onChange(); });
+    f.appendChild(lbl); f.appendChild(inp);
+    container.appendChild(f);
+  });
+}
+
+function wireToggle(btnId, gridId, openLabel, closeLabel){
+  const btn = document.getElementById(btnId);
+  const grid = document.getElementById(gridId);
+  btn.onclick = () => {
+    grid.classList.toggle('hidden');
+    btn.textContent = (grid.classList.contains('hidden') ? '▸ ' : '▾ ') + (grid.classList.contains('hidden') ? openLabel : closeLabel);
+  };
+}
+
+function renderSteps(){
+  const container = document.getElementById('stepsContainer');
+  container.innerHTML = '';
+  document.getElementById('emptySteps').style.display = steps.length ? 'none' : 'block';
+
+  steps.forEach((s, i) => {
+    const { cargo: prevCargo, ballast: prevBallast } = prevCargoBallastFor(i);
+    const card = document.createElement('div'); card.className = 'card';
+
+    const head = document.createElement('div'); head.className = 'cardhead';
+    const label = document.createElement('span'); label.className = 'steplabel'; label.textContent = 'Pour ' + (i+1);
+    const del = document.createElement('button'); del.className = 'small danger'; del.textContent = '✕ Delete';
+    del.onclick = () => { steps = steps.filter(x => x.id !== s.id); renderSteps(); renderCompare(); };
+    head.appendChild(label); head.appendChild(del);
+    card.appendChild(head);
+
+    const summary = document.createElement('div'); summary.className = 'summarybox';
+    summary.textContent = summaryFor(s, prevCargo, prevBallast).text;
+    card.appendChild(summary);
+
+    const row2 = document.createElement('div'); row2.className = 'fieldrow';
+    row2.appendChild(labeledField('Grade', s.grade, 'text', v => { s.grade = v; }));
+    row2.appendChild(labeledField('Time req (hrs)', s.timeReq, 'number', v => { s.timeReq = numOrBlank(v); }));
+    card.appendChild(row2);
+
+    const row4 = document.createElement('div'); row4.className = 'fieldrow';
+    row4.appendChild(labeledField('Comments', s.comments, 'text', v => { s.comments = v; }, true));
+    card.appendChild(row4);
+
+    const row5 = document.createElement('div'); row5.className = 'fieldrow';
+    row5.appendChild(labeledField('Fwd draft (M)', s.fwd, 'number', v => { s.fwd = numOrBlank(v); renderCompare(); }));
+    row5.appendChild(labeledField('Aft draft (M)', s.aft, 'number', v => { s.aft = numOrBlank(v); renderCompare(); }));
+    card.appendChild(row5);
+
+    const row6 = document.createElement('div'); row6.className = 'fieldrow';
+    const trimField = document.createElement('div'); trimField.className = 'field calc';
+    const trimLbl = document.createElement('label'); trimLbl.textContent = 'Trim (M) — auto';
+    const trimInp = document.createElement('input'); trimInp.type = 'text'; trimInp.readOnly = true;
+    trimInp.value = trimOf(s.fwd, s.aft);
+    trimField.appendChild(trimLbl); trimField.appendChild(trimInp);
+    row6.appendChild(trimField);
+    row6.appendChild(labeledField('GM (M)', s.gm, 'number', v => { s.gm = numOrBlank(v); }));
+    card.appendChild(row6);
+
+    const row7 = document.createElement('div'); row7.className = 'fieldrow';
+    row7.appendChild(labeledField('Air draft (M)', s.airDraft, 'number', v => { s.airDraft = numOrBlank(v); }));
+    row7.appendChild(labeledField('Max BM %', s.bm, 'number', v => { s.bm = numOrBlank(v); renderCompare(); }));
+    card.appendChild(row7);
+
+    const row8 = document.createElement('div'); row8.className = 'fieldrow';
+    row8.appendChild(labeledField('Max SF %', s.sf, 'number', v => { s.sf = numOrBlank(v); renderCompare(); }));
+    card.appendChild(row8);
+
+    const cargoToggle = document.createElement('button');
+    cargoToggle.className = 'toggle small'; cargoToggle.textContent = '▸ Cargo holds (tonnes in each hold now)';
+    const cargoGrid = document.createElement('div'); cargoGrid.className = 'taskgrid hidden';
+    buildGrid(cargoGrid, s.cargo, shortHoldLabel, CARGO_TANKS, () => { updateSummary(i); renderCompare(); });
+    cargoToggle.onclick = () => {
+      cargoGrid.classList.toggle('hidden');
+      cargoToggle.textContent = (cargoGrid.classList.contains('hidden') ? '▸' : '▾') + ' Cargo holds (tonnes in each hold now)';
+    };
+    card.appendChild(cargoToggle); card.appendChild(cargoGrid);
+
+    const ballastToggle = document.createElement('button');
+    ballastToggle.className = 'toggle small'; ballastToggle.textContent = '▸ Ballast tanks (% full now)';
+    const ballastGrid = document.createElement('div'); ballastGrid.className = 'ballastgrid hidden';
+    buildGrid(ballastGrid, s.ballast, shortBallastLabel, BALLAST_TANKS, () => { updateSummary(i); renderCompare(); });
+    ballastToggle.onclick = () => {
+      ballastGrid.classList.toggle('hidden');
+      ballastToggle.textContent = (ballastGrid.classList.contains('hidden') ? '▸' : '▾') + ' Ballast tanks (% full now)';
+    };
+    card.appendChild(ballastToggle); card.appendChild(ballastGrid);
+
+    container.appendChild(card);
+  });
+}
+
+function updateSummary(i){
+  const cards = document.querySelectorAll('#stepsContainer .card');
+  const card = cards[i];
+  if(!card) return;
+  const { cargo: prevCargo, ballast: prevBallast } = prevCargoBallastFor(i);
+  const summaryBox = card.querySelector('.summarybox');
+  summaryBox.textContent = summaryFor(steps[i], prevCargo, prevBallast).text;
+}
+
+function labeledField(labelText, value, type, onChange, full){
+  const wrap = document.createElement('div'); wrap.className = 'field' + (full ? ' full' : '');
+  const lbl = document.createElement('label'); lbl.textContent = labelText;
+  const inp = document.createElement('input'); inp.type = type; if(type==='number') inp.inputMode='decimal';
+  inp.value = value === null || value === undefined ? '' : value;
+  inp.addEventListener('input', e => { onChange(e.target.value); renderCompare(); });
+  wrap.appendChild(lbl); wrap.appendChild(inp);
+  return wrap;
+}
+
+function renderCompare(){
+  const table = document.getElementById('compareTable');
+  table.innerHTML = '';
+
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  const corner = document.createElement('th'); corner.className = 'rowlabel'; corner.textContent = 'Field';
+  headRow.appendChild(corner);
+  ['Init.'].concat(steps.map((s,i)=>'Pour '+(i+1))).forEach(h => { const th=document.createElement('th'); th.textContent=h; headRow.appendChild(th); });
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+
+  function addSectionRow(label){
+    const tr = document.createElement('tr'); tr.className = 'sectionrow';
+    const td = document.createElement('td'); td.colSpan = steps.length + 2; td.textContent = label;
+    tr.appendChild(td); tbody.appendChild(tr);
+  }
+  function addFieldRow(label, initVal, getter){
+    const tr = document.createElement('tr');
+    const rl = document.createElement('td'); rl.className='rowlabel'; rl.textContent = label; tr.appendChild(rl);
+    const it = document.createElement('td'); it.textContent = (initVal==='' || initVal===null || initVal===undefined) ? '—' : initVal; tr.appendChild(it);
+    steps.forEach(s => { const td=document.createElement('td'); const v=getter(s); td.textContent = (v==='' || v===null || v===undefined) ? '—' : v; tr.appendChild(td); });
+    tbody.appendChild(tr);
+  }
+
+  const i0fwd = document.getElementById('i0_fwd').value, i0aft = document.getElementById('i0_aft').value;
+  addSectionRow('Stability');
+  addFieldRow('Fwd (M)', i0fwd, s=>s.fwd);
+  addFieldRow('Aft (M)', i0aft, s=>s.aft);
+  addFieldRow('Trim (M)', trimOf(i0fwd,i0aft), s=>trimOf(s.fwd,s.aft));
+  addFieldRow('GM (M)', document.getElementById('i0_gm').value, s=>s.gm);
+  addFieldRow('Air draft (M)', document.getElementById('i0_air').value, s=>s.airDraft);
+  addFieldRow('Max BM %', document.getElementById('i0_bm').value, s=>s.bm);
+  addFieldRow('Max SF %', document.getElementById('i0_sf').value, s=>s.sf);
+
+  addSectionRow('Cargo holds (MT)');
+  CARGO_TANKS.forEach(t => addFieldRow(shortHoldLabel(t), initialCargo[t], s=>s.cargo[t]));
+
+  addSectionRow('Ballast tanks (% full)');
+  BALLAST_TANKS.forEach(t => addFieldRow(shortBallastLabel(t), initialBallast[t], s=>s.ballast[t]));
+
+  table.appendChild(tbody);
+}
+
+document.getElementById('addStepBtn').onclick = () => {
+  steps.push(newStep());
+  renderSteps(); renderCompare();
+  setTimeout(() => {
+    const cards = document.querySelectorAll('#stepsContainer .card');
+    const last = cards[cards.length-1];
+    if(last){ last.scrollIntoView({behavior:'smooth', block:'start'}); }
+  }, 50);
+};
+
+['i0_fwd','i0_aft','i0_gm','i0_air','i0_bm','i0_sf'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    document.getElementById('i0_trim').value = trimOf(document.getElementById('i0_fwd').value, document.getElementById('i0_aft').value);
+    renderCompare();
+    renderSteps();
+  });
+});
+
+buildGrid(document.getElementById('i0_cargoGrid'), initialCargo, shortHoldLabel, CARGO_TANKS, () => { renderCompare(); renderSteps(); });
+buildGrid(document.getElementById('i0_ballastGrid'), initialBallast, shortBallastLabel, BALLAST_TANKS, () => { renderCompare(); renderSteps(); });
+wireToggle('i0_toggleCargo','i0_cargoGrid','Cargo holds (tonnes in each hold right now)','Cargo holds (tonnes in each hold right now)');
+wireToggle('i0_toggleBallast','i0_ballastGrid','Ballast tanks (% full right now)','Ballast tanks (% full right now)');
+
+document.getElementById('exportBtn').onclick = () => {
+  const header = ['Pour No.','Hold No.','Tonnes','Grade','Ballast Operations','Time Required (hrs)','Comments',
+                  'Fwd Draft (M)','Aft Draft (M)','Trim (M)','GM (M)','Air Draft (M)','Max BM %','Max SF %'];
+  const aoa = [header];
+
+  const i0fwd = document.getElementById('i0_fwd').value, i0aft = document.getElementById('i0_aft').value;
+  aoa.push([0,'','','','','','Initial condition', i0fwd, i0aft, trimOf(i0fwd,i0aft),
+            document.getElementById('i0_gm').value, document.getElementById('i0_air').value,
+            document.getElementById('i0_bm').value, document.getElementById('i0_sf').value]);
+
+  steps.forEach((s, i) => {
+    const { cargo: prevCargo, ballast: prevBallast } = prevCargoBallastFor(i);
+    const sum = summaryFor(s, prevCargo, prevBallast);
+    aoa.push([i+1, sum.holdLabel, sum.tonnes || '', s.grade, sum.ballastText, s.timeReq, s.comments,
+               s.fwd, s.aft, trimOf(s.fwd, s.aft), s.gm, s.airDraft, s.bm, s.sf]);
+  });
+
+  aoa.push([]);
+  aoa.push(['Cargo hold tonnes by pour']);
+  const cargoHeader = ['Hold'].concat(['Init.'].concat(steps.map((s,i)=>'Pour '+(i+1))));
+  aoa.push(cargoHeader);
+  CARGO_TANKS.forEach(t => aoa.push([shortHoldLabel(t), initialCargo[t]].concat(steps.map(s=>s.cargo[t]))));
+
+  aoa.push([]);
+  aoa.push(['Ballast tank % by pour']);
+  const ballastHeader = ['Tank'].concat(['Init.'].concat(steps.map((s,i)=>'Pour '+(i+1))));
+  aoa.push(ballastHeader);
+  BALLAST_TANKS.forEach(t => aoa.push([shortBallastLabel(t), initialBallast[t]].concat(steps.map(s=>s.ballast[t]))));
+
+  let total = 0;
+  steps.forEach((s,i) => { const { cargo: prevCargo } = prevCargoBallastFor(i); const sum = summaryFor(s, prevCargo, {}); total += sum.tonnes || 0; });
+  aoa.push([]);
+  aoa.push(['Total Cargo (MT)', total]);
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:8},{wch:9},{wch:10},{wch:8},{wch:28},{wch:12},{wch:22},
+                 {wch:10},{wch:10},{wch:10},{wch:8},{wch:10},{wch:9},{wch:9}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Load Plan');
+  XLSX.writeFile(wb, 'load_plan_quick_entry.xlsx');
+};
+
+renderSteps();
+renderCompare();
+</script>
+</body>
+</html>
