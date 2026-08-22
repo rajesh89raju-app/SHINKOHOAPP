@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Load Plan Auto-Fill — M.V. Shin Koho</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
+<style>
+  :root{
+    --navy:#0B2545;
+    --steel:#1D4E89;
+    --steel-light:#E7EEF6;
+    --amber:#C8791A;
+    --amber-bg:#FBF1E2;
+    --line:#C9D2DC;
+    --line-strong:#9FAFC0;
+    --ink:#12202E;
+    --ink-soft:#4C5C6C;
+    --bg:#F5F7FA;
+    --white:#FFFFFF;
+    --danger:#B3261E;
+    --danger-bg:#FBEAE9;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:24px; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  }
+  h1{font-size:18px; font-weight:700; color:var(--navy); margin:0 0 4px;}
+  .sub{font-size:13px; color:var(--ink-soft); margin:0 0 20px;}
+  .panel{
+    background:var(--white); border:1px solid var(--line); border-radius:8px;
+    padding:16px; margin-bottom:16px;
+  }
+  .panel h2{font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--steel); margin:0 0 12px; font-weight:700;}
+  .meta-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px;}
+  .field{display:flex; flex-direction:column; gap:4px;}
+  .field label{font-size:11px; color:var(--ink-soft); font-weight:600;}
+  .field input, .field select{
+    border:1px solid var(--line); border-radius:6px; padding:7px 8px; font-size:13px;
+    font-family:inherit; background:var(--white); color:var(--ink);
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--steel); outline-offset:-1px;}
+
+  #dropzone{
+    border:2px dashed var(--line-strong); border-radius:8px; padding:22px;
+    text-align:center; color:var(--ink-soft); font-size:13px; cursor:pointer;
+    background:var(--steel-light); transition:background .15s, border-color .15s;
+  }
+  #dropzone.drag{background:#DCE8F5; border-color:var(--steel);}
+  #dropzone b{color:var(--steel); font-weight:700;}
+  #fileInput{display:none;}
+  #dropzoneImg{
+    border:2px dashed var(--line-strong); border-radius:8px; padding:22px;
+    text-align:center; color:var(--ink-soft); font-size:13px; cursor:pointer;
+    background:#EEF3F9; transition:background .15s, border-color .15s;
+  }
+  #dropzoneImg.drag{background:#DCE8F5; border-color:var(--steel);}
+  #dropzoneImg b{color:var(--steel); font-weight:700;}
+  #fileInputImg{display:none;}
+  #dropzoneInitial{
+    border:2px dashed var(--line-strong); border-radius:8px; padding:18px;
+    text-align:center; color:var(--ink-soft); font-size:13px; cursor:pointer;
+    background:#F1F0FB; transition:background .15s, border-color .15s;
+  }
+  #dropzoneInitial.drag{background:#E1DEF7; border-color:var(--steel);}
+  #dropzoneInitial b{color:var(--steel); font-weight:700;}
+  #fileInputInitial{display:none;}
+  td.diff input{background:#EFEAFB; color:#3C3489; font-weight:600;}
+  td.diff input:focus{background:#fff;}
+
+  .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;}
+  button{
+    font-family:inherit; font-size:13px; font-weight:600; border-radius:6px;
+    border:1px solid var(--line-strong); background:var(--white); color:var(--ink);
+    padding:8px 14px; cursor:pointer;
+  }
+  button:hover{background:var(--steel-light);}
+  button.primary{background:var(--steel); color:#fff; border-color:var(--steel);}
+  button.primary:hover{background:var(--navy);}
+  button.ghost{border-style:dashed;}
+  button:disabled{opacity:.45; cursor:not-allowed;}
+
+  .table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:8px;}
+  table{border-collapse:collapse; width:100%; min-width:1180px; font-size:12.5px;}
+  thead th{
+    background:var(--navy); color:#fff; font-weight:700; text-align:center;
+    padding:8px 6px; position:sticky; top:0; z-index:1; white-space:nowrap;
+  }
+  thead th.group{background:var(--steel);}
+  tbody td{border:1px solid var(--line); padding:3px; text-align:center; vertical-align:middle;}
+  tbody tr:nth-child(even){background:#FAFBFD;}
+  tbody input, tbody select{
+    width:100%; border:1px solid transparent; border-radius:4px; padding:5px 4px;
+    font-size:12.5px; text-align:center; background:transparent; font-family:inherit; color:var(--ink);
+  }
+  tbody input:hover, tbody select:hover{border-color:var(--line);}
+  tbody input:focus, tbody select:focus{outline:2px solid var(--steel); outline-offset:-1px; background:#fff;}
+  td.auto input{background:var(--amber-bg); color:#5a3c0f; font-weight:600;}
+  td.auto input:focus{background:#fff;}
+  td.ocr input{background:#E4EEFB; color:#0C447C; font-weight:600;}
+  td.ocr input:focus{background:#fff;}
+  .mismatch{background:var(--danger-bg) !important;}
+  .rowwarn{font-size:10.5px; color:var(--danger); padding:0 3px; text-align:left; line-height:1.3;}
+  td.pourno{font-weight:700; color:var(--navy); background:#fff !important;}
+  td.rowbtns{white-space:nowrap; background:#fff !important;}
+  td.rowbtns button{padding:4px 6px; font-size:11px; margin:0 1px;}
+  input[type=text].wide{min-width:120px;}
+  .comments-col{min-width:130px;}
+  .status{font-size:11px; margin-top:4px; min-height:14px;}
+  .status.ok{color:#2E7D32;}
+  .status.err{color:var(--danger);}
+  .status.busy{color:var(--ink-soft);}
+
+  .footer-row{display:flex; gap:16px; flex-wrap:wrap; margin-top:12px; align-items:flex-end;}
+  .totalcard{
+    background:var(--steel-light); border:1px solid var(--line); border-radius:8px;
+    padding:10px 16px; min-width:150px;
+  }
+  .totalcard .lbl{font-size:11px; color:var(--ink-soft); font-weight:600;}
+  .totalcard .val{font-size:18px; font-weight:700; color:var(--navy);}
+
+  .warn{
+    background:var(--danger-bg); border:1px solid #E3AFAB; color:#7A211B;
+    border-radius:8px; padding:10px 14px; font-size:12.5px; margin-bottom:16px;
+  }
+  .empty{padding:30px; text-align:center; color:var(--ink-soft); font-size:13px;}
+</style>
+</head>
+<body>
+
+<h1>Load plan auto-fill</h1>
+<p class="sub">Drop each pour's Trim Calculation PDF in order. Draft, trim and air draft fill in automatically — everything else you type in.</p>
+
+<div class="warn">Always cross-check the auto-filled figures against the source PDF and screenshots before using this plan operationally. Amber cells are read from the PDF's text; blue cells (BM%/SF%) are read from a screenshot using OCR, which is less reliable — a red warning line under a row means the screenshot didn't match up cleanly and needs a manual look. This tool does not perform any stability calculation itself.</div>
+
+<div class="panel">
+  <h2>Condition details</h2>
+  <div class="meta-grid">
+    <div class="field"><label>Port / condition</label><input type="text" id="metaPort" placeholder="e.g. Arrival Port Hedland"></div>
+    <div class="field"><label>Ballast in cargo hold (Y/N)</label>
+      <select id="metaBallastHold"><option value="NO">NO</option><option value="YES">YES</option></select>
+    </div>
+    <div class="field"><label>Total ballast onboard (MT)</label><input type="number" id="metaTotalBallast" placeholder="e.g. 60315"></div>
+    <div class="field"><label>Total deballast time (hrs)</label><input type="number" step="0.1" id="metaDeballastTime" placeholder="e.g. 19.0"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Initial condition (before pour 1)</h2>
+  <p class="sub" style="margin-bottom:12px;">This is pour 0 — the baseline. Every pour's Hold No./Tonnes/Ballast Ops below gets worked out by comparing that pour's report to this one (or to the previous pour).</p>
+  <div id="dropzoneInitial">
+    <b>Drop the initial condition's PDF here</b> — or click to choose a file.
+  </div>
+  <input type="file" id="fileInputInitial" accept="application/pdf">
+  <div class="status" id="dropStatusInitial"></div>
+  <div class="meta-grid" style="margin-top:12px;">
+    <div class="field"><label>Fwd draft (M)</label><input type="number" step="0.01" id="initFwd"></div>
+    <div class="field"><label>Mid draft (M)</label><input type="number" step="0.01" id="initMid"></div>
+    <div class="field"><label>Aft draft (M)</label><input type="number" step="0.01" id="initAft"></div>
+    <div class="field"><label>Trim (M)</label><input type="number" step="0.01" id="initTrim"></div>
+    <div class="field"><label>Air draft (M)</label><input type="number" step="0.01" id="initAirDraft"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Add pours</h2>
+  <p class="sub" style="margin-bottom:12px;">Drop files for each pour, in order — either works, and you can mix both in one drop:</p>
+  <div class="meta-grid" style="margin-bottom:12px;">
+    <div style="font-size:12.5px;"><b style="color:var(--steel);">Option 1 —</b> Trim Calculation PDF <span style="color:var(--ink-soft);">(fills Fwd/Mid/Aft draft, Trim, Air Draft)</span></div>
+    <div style="font-size:12.5px;"><b style="color:var(--steel);">Option 2 —</b> Result-screen screenshot <span style="color:var(--ink-soft);">(fills BM% / SF% via OCR)</span></div>
+  </div>
+  <div id="dropzone">
+    <b>Drop trim calc PDFs and/or Result-screen screenshots here</b> — in pour order — or click to choose files.<br>
+    A PDF starts a new pour row and fills draft/trim/air draft. A screenshot on its own also starts a new row — filled entirely from the screenshot. Drop a screenshot after a PDF for the same pour, and it just tops up BM%/SF%.
+  </div>
+  <input type="file" id="fileInput" accept="application/pdf,image/*" multiple>
+  <div class="toolbar">
+    <button id="addBlankRow">+ Add blank row</button>
+    <button id="addLabelRow" class="ghost">+ Add label row (e.g. "Draft check")</button>
+  </div>
+  <div class="status" id="dropStatus"></div>
+</div>
+
+<div class="panel">
+  <h2>Add BM % / SF % from Result-screen screenshots</h2>
+  <p class="sub" style="margin-bottom:12px;">Or drop screenshots here on their own, in the same pour order — matched to rows top-to-bottom that are still missing BM%/SF%. Read via OCR, so always double-check against the screen before trusting it.</p>
+  <div id="dropzoneImg">
+    <b>Drop Result-screen screenshots here</b> — in pour order — or click to choose files.
+  </div>
+  <input type="file" id="fileInputImg" accept="image/*" multiple>
+  <div class="status" id="dropStatusImg"></div>
+</div>
+
+<div class="panel">
+  <h2>Pour sequence</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th rowspan="2">Pour</th>
+          <th class="group" colspan="3">Cargo</th>
+          <th rowspan="2">Ballast operations</th>
+          <th rowspan="2">Time req<br>(hrs)</th>
+          <th rowspan="2">Comments</th>
+          <th class="group" colspan="3">Calculated draught (M)</th>
+          <th rowspan="2">Trim<br>(M)</th>
+          <th rowspan="2">Air draft<br>(M)</th>
+          <th class="group" colspan="2">Calculated maximum</th>
+          <th rowspan="2">Source</th>
+          <th rowspan="2"></th>
+        </tr>
+        <tr>
+          <th>Hold no.</th><th>Tonnes</th><th>Grade</th>
+          <th>Fwd</th><th>Mid</th><th>Aft</th>
+          <th>BM %</th><th>SF %</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div id="emptyMsg" class="empty">No pours yet — drop a PDF above or add a blank row.</div>
+</div>
+
+<div class="panel">
+  <h2>Final condition (after last pour)</h2>
+  <p class="sub" style="margin-bottom:0;" id="finalConditionSummary">Add at least one pour to see the final condition here.</p>
+</div>
+
+<div class="footer-row">
+  <div class="totalcard"><div class="lbl">Total cargo (MT)</div><div class="val" id="totalCargo">0</div></div>
+  <div class="totalcard"><div class="lbl">Rows</div><div class="val" id="rowCount">0</div></div>
+  <button class="primary" id="exportBtn">Download Excel</button>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let rows = [];
+let seq = 0;
+let initialCondition = { fwd:'', mid:'', aft:'', trim:'', airDraft:'', tanks:null, source:'' };
+
+function newRow(overrides){
+  seq += 1;
+  return Object.assign({
+    id: seq,
+    isLabel: false,
+    labelText: '',
+    holdNo:'', tonnes:'', grade:'',
+    ballastOps:'', timeReq:'', comments:'',
+    fwd:'', mid:'', aft:'', trim:'', airDraft:'',
+    bm:'', sf:'', ocrFilled:false, ocrFullFilled:false, ocrSource:'', ocrWarning:'',
+    source:'', autoFilled:false, raw:'',
+    tanks:null, diffFilledCargo:false, diffFilledBallast:false, diffNote:''
+  }, overrides || {});
+}
+
+function previousTanksFor(rowId){
+  const idx = rows.findIndex(r => r.id === rowId);
+  for(let i=idx-1;i>=0;i--){
+    if(!rows[i].isLabel && rows[i].tanks) return rows[i].tanks;
+  }
+  return initialCondition.tanks;
+}
+
+function numOrBlank(v){
+  if(v===null || v===undefined) return '';
+  const n = parseFloat(v);
+  return isNaN(n) ? '' : n;
+}
+
+function extractField(text, patterns){
+  for(const re of patterns){
+    const m = text.match(re);
+    if(m) return parseFloat(m[1]);
+  }
+  return null;
+}
+
+function parseTrimCalcText(text){
+  const t = text.replace(/\s+/g,' ');
+  const fwd = extractField(t, [/DRAFT\s*FORE\s*\(?M\)?\s*([-\d.]+)/i]);
+  const mid = extractField(t, [/DRAFT\s*MEAN\s*\(?M\)?\s*([-\d.]+)/i, /DRAFT\s*AT\s*C\.?F\.?\s*\(?M\)?\s*([-\d.]+)/i]);
+  const aft = extractField(t, [/DRAFT\s*AFT\s*\(?M\)?\s*([-\d.]+)/i]);
+  const trim = extractField(t, [/TRIM\s*\(\s*(?:AFT|FWD|FORE)\s*\)\s*\(?M\)?\s*([-\d.]+)/i]);
+  const airDraft = extractField(t, [/MAX\s*AIR\s*DRAFT\s*\(?M\)?\s*([-\d.]+)/i, /MAX\.?\s*AIR\s*DRAFT:?\s*([-\d.]+)/i]);
+  return { fwd, mid, aft, trim, airDraft };
+}
+
+function parseResultScreenText(text){
+  const t = text.replace(/\s+/g,' ');
+  const bm = extractField(t, [/Max\.?\s*B\.?\s*M\.?\s*Ratio\s*:?\s*(-?\d+\.?\d*)/i]);
+  const sf = extractField(t, [/Max\.?\s*S\.?\s*F\.?\s*Ratio\s*:?\s*(-?\d+\.?\d*)/i]);
+  const fwd = extractField(t, [/Draft\s*\(?\s*Fore\s*\)?\s*:?\s*(-?\d+\.?\d*)/i]);
+  const mid = extractField(t, [/Draft\s*\(?\s*Mean\s*\)?\s*:?\s*(-?\d+\.?\d*)/i]);
+  const aft = extractField(t, [/Draft\s*\(?\s*Aft\s*\)?\s*:?\s*(-?\d+\.?\d*)/i]);
+  const trim = extractField(t, [/Trim\s*\(?\s*(?:Aft|Fwd|Fore)\s*\)?\s*:?\s*(-?\d+\.?\d*)/i]);
+  const airDraft = extractField(t, [/Max\.?\s*Air\s*Draft\s*:?\s*(-?\d+\.?\d*)/i]);
+  return { bm, sf, fwd, mid, aft, trim, airDraft };
+}
+
+async function ocrImageText(file){
+  const { data } = await Tesseract.recognize(file, 'eng');
+  return data.text;
+}
+
+async function extractPdfText(arrayBuffer){
+  const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+  let fullText = '';
+  for(let p=1;p<=pdf.numPages;p++){
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const items = content.items
+      .map(it => ({ str: it.str, x: it.transform[4], y: it.transform[5] }))
+      .filter(it => it.str.trim().length > 0);
+    items.sort((a,b) => (Math.abs(a.y-b.y) > 2) ? (b.y - a.y) : (a.x - b.x));
+    const lines = [];
+    let curY = null, curLine = [];
+    for(const it of items){
+      if(curY === null || Math.abs(it.y - curY) > 2){
+        if(curLine.length) lines.push(curLine.map(i=>i.str).join(' '));
+        curLine = [it];
+        curY = it.y;
+      } else {
+        curLine.push(it);
+      }
+    }
+    if(curLine.length) lines.push(curLine.map(i=>i.str).join(' '));
+    fullText += lines.join('\n') + '\n';
+  }
+  return fullText;
+}
+
+function parseTankTable(text){
+  const tanks = {};
+  const lineRe = /^\s*([A-Z][A-Z0-9./()\- ]{1,35}?)\s+\d\.\d{3,4}\s+[WE%]\s*\(\s*([\d.]+|\*)\s*\)\s+([\d,]+|\*)/;
+  for(const line of text.split('\n')){
+    const m = line.match(lineRe);
+    if(!m) continue;
+    const name = m[1].trim();
+    const pct = m[2] === '*' ? null : parseFloat(m[2]);
+    const weight = m[3] === '*' ? null : parseFloat(m[3].replace(/,/g,''));
+    tanks[name] = { pct, weight };
+  }
+  return tanks;
+}
+
+function isCargoTank(name){ return /CARGO\s*HOLD/i.test(name); }
+function isBallastTank(name){ return /W\.?B\.?T|F\.?P\.?T|A\.?P\.?T/i.test(name); }
+
+function cleanTankLabel(name){
+  return name.replace(/\.(?=[A-Z])/g,'').replace(/\s+/g,' ').trim();
+}
+
+function diffTanks(prevTanks, curTanks){
+  const cargoChanges = [];
+  const ballastChanges = [];
+  const names = new Set([...Object.keys(prevTanks||{}), ...Object.keys(curTanks||{})]);
+  names.forEach(name => {
+    const prev = (prevTanks && prevTanks[name]) || null;
+    const cur = (curTanks && curTanks[name]) || null;
+    if(!prev || !cur || prev.weight === null || cur.weight === null) return;
+    const deltaW = cur.weight - prev.weight;
+    const deltaP = (prev.pct !== null && cur.pct !== null) ? (cur.pct - prev.pct) : null;
+    if(Math.abs(deltaW) < 1 && (deltaP === null || Math.abs(deltaP) < 0.5)) return;
+    if(isCargoTank(name)){
+      const holdMatch = name.match(/NO\.(\d+)/i);
+      cargoChanges.push({ name, hold: holdMatch ? holdMatch[1] : name, deltaW, curWeight: cur.weight });
+    } else if(isBallastTank(name)){
+      ballastChanges.push({ name, prevPct: prev.pct, curPct: cur.pct, deltaP });
+    }
+  });
+  return { cargoChanges, ballastChanges };
+}
+
+function describeBallastChanges(changes){
+  return changes.map(c => {
+    const label = cleanTankLabel(c.name);
+    if(c.curPct !== null && c.curPct <= 2 && c.deltaP < 0){
+      return label + ' emptied (was ' + c.prevPct + '%)';
+    }
+    if(c.deltaP < 0){
+      return label + ' pumped out to ' + c.curPct + '% (from ' + c.prevPct + '%)';
+    }
+    return label + ' ballasted to ' + c.curPct + '% (from ' + c.prevPct + '%)';
+  }).join('; ');
+}
+
+function applyTankDiff(row, prevTanks){
+  if(!row.tanks || !prevTanks){
+    row.diffNote = 'No previous tank data to compare — fill hold/tonnes/ballast manually.';
+    return;
+  }
+  const { cargoChanges, ballastChanges } = diffTanks(prevTanks, row.tanks);
+  if(cargoChanges.length){
+    row.holdNo = cargoChanges.map(c => c.hold).join('+');
+    row.tonnes = Math.round(cargoChanges.reduce((s,c)=>s+c.deltaW,0));
+    row.diffFilledCargo = true;
+    if(cargoChanges.length > 1){
+      row.diffNote = 'Multiple holds changed this pour — check split: ' +
+        cargoChanges.map(c => 'Hold ' + c.hold + ': ' + Math.round(c.deltaW) + ' MT').join(', ');
+    }
+  } else {
+    row.diffNote = 'No cargo hold change detected vs previous condition — check manually.';
+  }
+  if(ballastChanges.length){
+    row.ballastOps = describeBallastChanges(ballastChanges);
+    row.diffFilledBallast = true;
+  }
+}
+
+async function handleFiles(fileList){
+  const allFiles = Array.from(fileList);
+  const isPdf = f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
+  const isImg = f => f.type.startsWith('image/');
+  const files = allFiles.filter(f => isPdf(f) || isImg(f));
+  if(files.length === 0){
+    setDropStatus('No PDF or image files found in that drop.', 'err');
+    return;
+  }
+  setDropStatus('Reading ' + files.length + ' file(s)...', 'busy');
+  let okCount = 0, failCount = 0;
+  for(const file of files){
+    if(isPdf(file)){
+      const row = newRow({ source: file.name });
+      rows.push(row);
+      render();
+      try{
+        const buf = await file.arrayBuffer();
+        const text = await extractPdfText(buf);
+        const vals = parseTrimCalcText(text);
+        row.fwd = numOrBlank(vals.fwd);
+        row.mid = numOrBlank(vals.mid);
+        row.aft = numOrBlank(vals.aft);
+        row.trim = numOrBlank(vals.trim);
+        row.airDraft = numOrBlank(vals.airDraft);
+        row.raw = text.slice(0, 4000);
+        row.autoFilled = (vals.fwd!==null || vals.aft!==null || vals.mid!==null);
+        row.tanks = parseTankTable(text);
+        applyTankDiff(row, previousTanksFor(row.id));
+        if(!row.autoFilled) failCount++; else okCount++;
+      }catch(err){
+        failCount++;
+        row.comments = row.comments || ('Could not read PDF: ' + err.message);
+      }
+    } else if(isImg(file)){
+      let target = rows.find(r => !r.isLabel && !r.ocrFilled && !r.ocrFullFilled);
+      if(!target){
+        target = newRow({ source: file.name });
+        rows.push(target);
+      }
+      render();
+      try{
+        const ok = await applyOcrToRow(target, file);
+        if(ok) okCount++; else failCount++;
+      }catch(err){
+        failCount++;
+        target.ocrWarning = 'OCR failed: ' + err.message;
+      }
+    }
+    render();
+  }
+  if(failCount === 0){
+    setDropStatus('Processed ' + okCount + ' file(s) successfully.', 'ok');
+  }else{
+    setDropStatus('Processed ' + files.length + ' file(s) — ' + failCount + ' need a manual check.', 'err');
+  }
+}
+
+function setDropStatus(msg, cls){
+  const el = document.getElementById('dropStatus');
+  el.textContent = msg;
+  el.className = 'status ' + (cls||'');
+}
+
+function setDropStatusImg(msg, cls){
+  const el = document.getElementById('dropStatusImg');
+  el.textContent = msg;
+  el.className = 'status ' + (cls||'');
+}
+
+async function applyOcrToRow(row, file){
+  const text = await ocrImageText(file);
+  const vals = parseResultScreenText(text);
+  row.ocrSource = file.name;
+  row.ocrWarning = '';
+
+  if(!row.autoFilled){
+    if(vals.fwd !== null) row.fwd = vals.fwd;
+    if(vals.mid !== null) row.mid = vals.mid;
+    if(vals.aft !== null) row.aft = vals.aft;
+    if(vals.trim !== null) row.trim = vals.trim;
+    if(vals.airDraft !== null) row.airDraft = vals.airDraft;
+    row.ocrFullFilled = (vals.fwd !== null || vals.mid !== null || vals.aft !== null);
+  } else {
+    if(vals.fwd !== null && row.fwd !== '' && row.fwd !== null && Math.abs(parseFloat(row.fwd) - vals.fwd) > 0.05){
+      row.ocrWarning = 'Fwd draft on screenshot (' + vals.fwd + ') differs from PDF value (' + row.fwd + ') — check this row.';
+    }
+    if(!row.ocrWarning && vals.aft !== null && row.aft !== '' && row.aft !== null && Math.abs(parseFloat(row.aft) - vals.aft) > 0.05){
+      row.ocrWarning = 'Aft draft on screenshot (' + vals.aft + ') differs from PDF value (' + row.aft + ') — check this row.';
+    }
+  }
+
+  if(vals.bm !== null) row.bm = vals.bm;
+  if(vals.sf !== null) row.sf = vals.sf;
+  row.ocrFilled = (vals.bm !== null || vals.sf !== null);
+
+  if(!row.ocrFilled && !row.ocrFullFilled && !row.ocrWarning){
+    row.ocrWarning = 'Could not find the expected values in this image — enter manually.';
+  }
+  return row.ocrFilled || row.ocrFullFilled;
+}
+
+async function handleImageFiles(fileList){
+  const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+  if(files.length === 0){
+    setDropStatusImg('No image files found in that drop.', 'err');
+    return;
+  }
+  const targets = rows.filter(r => !r.isLabel && !r.ocrFilled);
+  if(targets.length === 0){
+    setDropStatusImg('No rows are waiting for BM%/SF% — add pours first, or use a row\'s own camera button to replace a value.', 'err');
+    return;
+  }
+  setDropStatusImg('Reading ' + files.length + ' screenshot(s)...', 'busy');
+  let okCount = 0, failCount = 0;
+  for(let i=0; i<files.length && i<targets.length; i++){
+    const row = targets[i];
+    try{
+      const ok = await applyOcrToRow(row, files[i]);
+      if(ok) okCount++; else failCount++;
+    }catch(err){
+      failCount++;
+      row.ocrWarning = 'OCR failed: ' + err.message;
+    }
+    render();
+  }
+  if(failCount === 0){
+    setDropStatusImg('Filled BM%/SF% for ' + okCount + ' row(s).', 'ok');
+  }else{
+    setDropStatusImg('Processed ' + files.length + ' image(s) — ' + failCount + ' need manual entry or review.', 'err');
+  }
+}
+
+async function attachScreenshotToRow(row){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = async () => {
+    if(!input.files || !input.files[0]) return;
+    row.ocrWarning = '';
+    render();
+    try{
+      await applyOcrToRow(row, input.files[0]);
+    }catch(err){
+      row.ocrWarning = 'OCR failed: ' + err.message;
+    }
+    render();
+  };
+  input.click();
+}
+
+function fieldSetter(id, key, parseAsNumber){
+  return function(e){
+    const row = rows.find(r => r.id === id);
+    if(!row) return;
+    row[key] = parseAsNumber ? numOrBlank(e.target.value) : e.target.value;
+    if(!parseAsNumber){} 
+    updateTotals();
+  };
+}
+
+function moveRow(id, dir){
+  const idx = rows.findIndex(r => r.id === id);
+  const newIdx = idx + dir;
+  if(newIdx < 0 || newIdx >= rows.length) return;
+  const tmp = rows[idx];
+  rows[idx] = rows[newIdx];
+  rows[newIdx] = tmp;
+  render();
+}
+
+function deleteRow(id){
+  rows = rows.filter(r => r.id !== id);
+  render();
+}
+
+function cellInput(value, oninput, opts){
+  opts = opts || {};
+  const inp = document.createElement('input');
+  inp.type = opts.type || 'text';
+  if(opts.step) inp.step = opts.step;
+  inp.value = value === null || value === undefined ? '' : value;
+  inp.addEventListener('input', oninput);
+  if(opts.placeholder) inp.placeholder = opts.placeholder;
+  return inp;
+}
+
+function render(){
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  document.getElementById('emptyMsg').style.display = rows.length ? 'none' : 'block';
+
+  rows.forEach((row, i) => {
+    const tr = document.createElement('tr');
+
+    if(row.isLabel){
+      const tdNo = document.createElement('td');
+      tdNo.className = 'pourno';
+      tdNo.textContent = i+1;
+      tr.appendChild(tdNo);
+
+      const tdLabel = document.createElement('td');
+      tdLabel.colSpan = 13;
+      tdLabel.style.textAlign = 'left';
+      tdLabel.style.fontWeight = '700';
+      tdLabel.style.background = '#EFF3F7';
+      const inp = cellInput(row.labelText, e => { row.labelText = e.target.value; }, {placeholder:'Section label, e.g. Draft check'});
+      inp.style.fontWeight = '700';
+      inp.style.textAlign = 'left';
+      tdLabel.appendChild(inp);
+      tr.appendChild(tdLabel);
+
+      const tdBtns = document.createElement('td');
+      tdBtns.className = 'rowbtns';
+      tdBtns.appendChild(rowButtons(row));
+      tr.appendChild(tdBtns);
+
+      tbody.appendChild(tr);
+      return;
+    }
+
+    const tdNo = document.createElement('td');
+    tdNo.className = 'pourno';
+    tdNo.textContent = i+1;
+    tr.appendChild(tdNo);
+
+    const cols = [
+      ['holdNo', false, {}],
+      ['tonnes', true, {type:'number'}],
+      ['grade', false, {placeholder:'NBL / MF'}],
+      ['ballastOps', false, {placeholder:'e.g. Po. Wbt 4 p/s (99%)'}],
+      ['timeReq', true, {type:'number', step:'0.1'}],
+      ['comments', false, {}],
+      ['fwd', true, {type:'number', step:'0.01'}],
+      ['mid', true, {type:'number', step:'0.01'}],
+      ['aft', true, {type:'number', step:'0.01'}],
+      ['trim', true, {type:'number', step:'0.01'}],
+      ['airDraft', true, {type:'number', step:'0.01'}],
+      ['bm', true, {type:'number', step:'0.01'}],
+      ['sf', true, {type:'number', step:'0.01'}],
+    ];
+    const autoKeys = ['fwd','mid','aft','trim','airDraft'];
+    const ocrKeys = ['bm','sf'];
+    const cargoKeys = ['holdNo','tonnes'];
+    const ballastKeys = ['ballastOps'];
+
+    cols.forEach(([key, isNum, opts]) => {
+      const td = document.createElement('td');
+      if(row.autoFilled && autoKeys.includes(key)) td.className = 'auto';
+      if(row.ocrFullFilled && autoKeys.includes(key)) td.className = 'ocr';
+      if(row.ocrFilled && ocrKeys.includes(key)) td.className = 'ocr';
+      if(row.diffFilledCargo && cargoKeys.includes(key)) td.className = 'diff';
+      if(row.diffFilledBallast && ballastKeys.includes(key)) td.className = 'diff';
+      const inp = cellInput(row[key], fieldSetter(row.id, key, isNum), opts);
+      td.appendChild(inp);
+      tr.appendChild(td);
+    });
+
+    const tdSrc = document.createElement('td');
+    tdSrc.style.fontSize = '11px';
+    tdSrc.style.color = 'var(--ink-soft)';
+    tdSrc.textContent = row.source || '—';
+    if(row.ocrSource){
+      const span = document.createElement('div');
+      span.textContent = '📷 ' + row.ocrSource;
+      span.style.color = '#0C447C';
+      tdSrc.appendChild(span);
+    }
+    tr.appendChild(tdSrc);
+
+    const tdBtns = document.createElement('td');
+    tdBtns.className = 'rowbtns';
+    tdBtns.appendChild(rowButtons(row));
+    const cam = document.createElement('button');
+    cam.textContent = '📷';
+    cam.title = 'Attach Result-screen screenshot for BM%/SF%';
+    cam.onclick = () => attachScreenshotToRow(row);
+    tdBtns.appendChild(cam);
+    tr.appendChild(tdBtns);
+
+    tbody.appendChild(tr);
+
+    const warnMsgs = [];
+    if(row.ocrWarning) warnMsgs.push(row.ocrWarning);
+    if(row.diffNote) warnMsgs.push(row.diffNote);
+    if(warnMsgs.length){
+      const warnTr = document.createElement('tr');
+      const warnTd = document.createElement('td');
+      warnTd.colSpan = 16;
+      warnTd.className = 'rowwarn';
+      warnTd.textContent = warnMsgs.map(m => '⚠ ' + m).join('   ');
+      warnTr.appendChild(warnTd);
+      tbody.appendChild(warnTr);
+    }
+  });
+
+  document.getElementById('rowCount').textContent = rows.length;
+  updateTotals();
+}
+
+function rowButtons(row){
+  const wrap = document.createElement('span');
+  const up = document.createElement('button'); up.textContent = '↑'; up.title='Move up';
+  up.onclick = () => moveRow(row.id, -1);
+  const down = document.createElement('button'); down.textContent = '↓'; down.title='Move down';
+  down.onclick = () => moveRow(row.id, 1);
+  const del = document.createElement('button'); del.textContent = '✕'; del.title='Delete row';
+  del.onclick = () => deleteRow(row.id);
+  wrap.appendChild(up); wrap.appendChild(down); wrap.appendChild(del);
+  return wrap;
+}
+
+function updateTotals(){
+  let total = 0;
+  rows.forEach(r => { if(!r.isLabel && r.tonnes) total += parseFloat(r.tonnes) || 0; });
+  document.getElementById('totalCargo').textContent = total.toLocaleString();
+  updateFinalConditionSummary();
+}
+
+function updateFinalConditionSummary(){
+  const el = document.getElementById('finalConditionSummary');
+  const dataRows = rows.filter(r => !r.isLabel);
+  if(dataRows.length === 0){
+    el.textContent = 'Add at least one pour to see the final condition here.';
+    return;
+  }
+  const last = dataRows[dataRows.length - 1];
+  const parts = [];
+  if(last.fwd !== '') parts.push('Fwd ' + last.fwd + ' M');
+  if(last.mid !== '') parts.push('Mid ' + last.mid + ' M');
+  if(last.aft !== '') parts.push('Aft ' + last.aft + ' M');
+  if(last.trim !== '') parts.push('Trim ' + last.trim + ' M');
+  if(last.airDraft !== '') parts.push('Air draft ' + last.airDraft + ' M');
+  if(last.bm !== '') parts.push('Max BM ' + last.bm + '%');
+  if(last.sf !== '') parts.push('Max SF ' + last.sf + '%');
+  el.textContent = parts.length ? parts.join(' · ') : 'This pour has no values filled in yet.';
+}
+
+const dz = document.getElementById('dropzone');
+const fi = document.getElementById('fileInput');
+dz.addEventListener('click', () => fi.click());
+fi.addEventListener('change', e => handleFiles(e.target.files));
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.classList.remove('drag');
+  handleFiles(e.dataTransfer.files);
+});
+
+async function handleInitialFile(file){
+  setDropStatusInitial('Reading initial condition...', 'busy');
+  try{
+    const buf = await file.arrayBuffer();
+    const text = await extractPdfText(buf);
+    const vals = parseTrimCalcText(text);
+    initialCondition.fwd = numOrBlank(vals.fwd);
+    initialCondition.mid = numOrBlank(vals.mid);
+    initialCondition.aft = numOrBlank(vals.aft);
+    initialCondition.trim = numOrBlank(vals.trim);
+    initialCondition.airDraft = numOrBlank(vals.airDraft);
+    initialCondition.tanks = parseTankTable(text);
+    initialCondition.source = file.name;
+    document.getElementById('initFwd').value = initialCondition.fwd;
+    document.getElementById('initMid').value = initialCondition.mid;
+    document.getElementById('initAft').value = initialCondition.aft;
+    document.getElementById('initTrim').value = initialCondition.trim;
+    document.getElementById('initAirDraft').value = initialCondition.airDraft;
+    setDropStatusInitial('Initial condition loaded from ' + file.name + '.', 'ok');
+  }catch(err){
+    setDropStatusInitial('Could not read that PDF: ' + err.message, 'err');
+  }
+}
+
+function setDropStatusInitial(msg, cls){
+  const el = document.getElementById('dropStatusInitial');
+  el.textContent = msg;
+  el.className = 'status ' + (cls||'');
+}
+
+const dzInit = document.getElementById('dropzoneInitial');
+const fiInit = document.getElementById('fileInputInitial');
+dzInit.addEventListener('click', () => fiInit.click());
+fiInit.addEventListener('change', e => { if(e.target.files[0]) handleInitialFile(e.target.files[0]); });
+dzInit.addEventListener('dragover', e => { e.preventDefault(); dzInit.classList.add('drag'); });
+dzInit.addEventListener('dragleave', () => dzInit.classList.remove('drag'));
+dzInit.addEventListener('drop', e => {
+  e.preventDefault();
+  dzInit.classList.remove('drag');
+  if(e.dataTransfer.files[0]) handleInitialFile(e.dataTransfer.files[0]);
+});
+
+const initFieldMap = { initFwd:'fwd', initMid:'mid', initAft:'aft', initTrim:'trim', initAirDraft:'airDraft' };
+Object.keys(initFieldMap).forEach(id => {
+  document.getElementById(id).addEventListener('input', e => {
+    initialCondition[initFieldMap[id]] = numOrBlank(e.target.value);
+  });
+});
+
+const dzImg = document.getElementById('dropzoneImg');
+const fiImg = document.getElementById('fileInputImg');
+dzImg.addEventListener('click', () => fiImg.click());
+fiImg.addEventListener('change', e => handleImageFiles(e.target.files));
+dzImg.addEventListener('dragover', e => { e.preventDefault(); dzImg.classList.add('drag'); });
+dzImg.addEventListener('dragleave', () => dzImg.classList.remove('drag'));
+dzImg.addEventListener('drop', e => {
+  e.preventDefault();
+  dzImg.classList.remove('drag');
+  handleImageFiles(e.dataTransfer.files);
+});
+
+document.getElementById('addBlankRow').onclick = () => { rows.push(newRow()); render(); };
+document.getElementById('addLabelRow').onclick = () => { rows.push(newRow({isLabel:true})); render(); };
+
+document.getElementById('exportBtn').onclick = () => {
+  const meta = [
+    ['Port / condition', document.getElementById('metaPort').value],
+    ['Ballast in cargo hold (Y/N)', document.getElementById('metaBallastHold').value],
+    ['Total ballast onboard (MT)', document.getElementById('metaTotalBallast').value],
+    ['Total deballast time (hrs)', document.getElementById('metaDeballastTime').value],
+  ];
+
+  const header = ['Pour No.','Hold No.','Tonnes','Grade','Ballast Operations','Time Required (hrs)','Comments',
+                  'Fwd Draft (M)','Mid Draft (M)','Aft Draft (M)','Trim (M)','Air Draft (M)','Max BM %','Max SF %','Source File'];
+
+  const aoa = [];
+  meta.forEach(m => aoa.push(m));
+  aoa.push([]);
+  aoa.push(header);
+
+  aoa.push([0, '', '', '', '', '', 'Initial condition',
+             initialCondition.fwd, initialCondition.mid, initialCondition.aft,
+             initialCondition.trim, initialCondition.airDraft, '', '', initialCondition.source]);
+
+  rows.forEach((r, i) => {
+    if(r.isLabel){
+      aoa.push([i+1, r.labelText]);
+    }else{
+      aoa.push([i+1, r.holdNo, r.tonnes, r.grade, r.ballastOps, r.timeReq, r.comments,
+                 r.fwd, r.mid, r.aft, r.trim, r.airDraft, r.bm, r.sf, r.source]);
+    }
+  });
+
+  let total = 0;
+  rows.forEach(r => { if(!r.isLabel && r.tonnes) total += parseFloat(r.tonnes) || 0; });
+  aoa.push([]);
+  aoa.push(['Total Cargo (MT)', total]);
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [
+    {wch:8},{wch:9},{wch:10},{wch:8},{wch:24},{wch:12},{wch:22},
+    {wch:10},{wch:10},{wch:10},{wch:8},{wch:10},{wch:9},{wch:9},{wch:20}
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Load Plan');
+  XLSX.writeFile(wb, 'load_plan.xlsx');
+};
+
+render();
+</script>
+</body>
+</html>
