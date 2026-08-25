@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daylog — Calendar &amp; Records</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --ink:#16232C;
+    --ink-soft:#3B4A54;
+    --paper:#F7F5EF;
+    --paper-raised:#FFFFFF;
+    --line:#DAD4C6;
+    --brass:#AD8A4E;
+    --brass-soft:#E7DAC0;
+    --teal:#2F5D62;
+    --teal-soft:#DCEAE9;
+    --danger:#A64B3E;
+    --shadow: 0 8px 30px rgba(22,35,44,0.12);
+    --radius: 10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  body{min-height:100vh;}
+  ::selection{background:var(--brass-soft);}
+
+  .app{max-width:1100px;margin:0 auto;padding:28px 20px 60px;}
+
+  .topbar{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px;border-bottom:2px solid var(--ink);padding-bottom:16px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{width:38px;height:38px;flex-shrink:0;}
+  .brand h1{font-family:'Fraunces',serif;font-weight:700;font-size:26px;margin:0;letter-spacing:0.2px;}
+  .brand p{margin:2px 0 0;font-size:12px;color:var(--ink-soft);letter-spacing:0.06em;text-transform:uppercase;}
+
+  .export-group{display:flex;gap:8px;flex-wrap:wrap;}
+  .btn{
+    font-family:'Inter',sans-serif;font-size:13px;font-weight:600;border-radius:7px;
+    padding:9px 14px;border:1.5px solid var(--ink);background:var(--paper-raised);color:var(--ink);
+    cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:background .15s ease, transform .1s ease;
+  }
+  .btn:hover{background:var(--ink);color:var(--paper-raised);}
+  .btn:active{transform:translateY(1px);}
+  .btn.primary{background:var(--ink);color:var(--paper-raised);}
+  .btn.primary:hover{background:var(--teal);border-color:var(--teal);}
+  .btn.ghost{border-color:var(--line);}
+  .btn.ghost:hover{background:var(--ink);border-color:var(--ink);}
+  .btn.small{padding:6px 10px;font-size:12px;}
+  .btn svg{width:15px;height:15px;flex-shrink:0;}
+
+  .monthbar{display:flex;align-items:center;justify-content:space-between;margin:20px 0 14px;}
+  .monthbar .title-wrap{display:flex;align-items:baseline;gap:10px;}
+  .monthbar h2{font-family:'Fraunces',serif;font-size:28px;font-weight:600;margin:0;}
+  .monthbar .yr{color:var(--brass);font-family:'IBM Plex Mono',monospace;font-size:16px;}
+  .nav-controls{display:flex;align-items:center;gap:6px;}
+  .nav-btn{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--ink);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;}
+  .nav-btn:hover{background:var(--ink);}
+  .nav-btn:hover svg{stroke:var(--paper);}
+  .nav-btn svg{width:16px;height:16px;stroke:var(--ink);}
+
+  .weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:8px;}
+  .weekdays span{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;color:var(--ink-soft);text-transform:uppercase;}
+
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;}
+  .cell{
+    background:var(--paper-raised);border:1.5px solid var(--line);border-radius:var(--radius);
+    min-height:96px;padding:8px;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;
+    transition:border-color .15s ease, box-shadow .15s ease, transform .1s ease;position:relative;
+  }
+  .cell:hover{border-color:var(--brass);box-shadow:var(--shadow);transform:translateY(-2px);}
+  .cell.empty{background:transparent;border:none;cursor:default;box-shadow:none;transform:none;}
+  .cell.today{border-color:var(--teal);border-width:2px;}
+  .cell .daynum{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:var(--ink);}
+  .cell.today .daynum{color:var(--teal);}
+  .cell .badges{display:flex;flex-wrap:wrap;gap:4px;align-items:center;}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+  .dot.log{background:var(--brass);}
+  .dot.photos{background:var(--teal);}
+  .dot.docs{background:var(--ink-soft);}
+  .cell .events-preview{font-size:11px;color:var(--ink-soft);line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;}
+
+  @media (max-width:640px){
+    .cell{min-height:72px;padding:6px;}
+    .monthbar h2{font-size:22px;}
+    .brand h1{font-size:20px;}
+    .export-group .btn span{display:none;}
+  }
+
+  .overlay{position:fixed;inset:0;background:rgba(22,35,44,0.45);opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:40;}
+  .overlay.open{opacity:1;pointer-events:auto;}
+
+  .panel{
+    position:fixed;top:0;right:0;height:100%;width:min(480px, 100vw);background:var(--paper);
+    box-shadow:-10px 0 40px rgba(0,0,0,0.2);transform:translateX(100%);transition:transform .25s ease;
+    z-index:41;display:flex;flex-direction:column;
+  }
+  .panel.open{transform:translateX(0);}
+  .panel-head{
+    padding:20px 22px 14px;border-bottom:2px solid var(--ink);display:flex;justify-content:space-between;align-items:flex-start;
+    background:var(--paper-raised);
+  }
+  .panel-head .pd-date{font-family:'Fraunces',serif;font-size:22px;font-weight:700;margin:0;}
+  .panel-head .pd-sub{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .panel-close{background:none;border:none;cursor:pointer;padding:4px;}
+  .panel-close svg{width:20px;height:20px;stroke:var(--ink);}
+
+  .tabs{display:flex;border-bottom:1.5px solid var(--line);background:var(--paper-raised);}
+  .tab{flex:1;padding:12px 6px;text-align:center;font-size:12.5px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;
+       color:var(--ink-soft);cursor:pointer;border-bottom:3px solid transparent;background:none;border-top:none;border-left:none;border-right:none;font-family:'Inter',sans-serif;}
+  .tab.active{color:var(--ink);border-bottom-color:var(--brass);}
+  .tab-content{flex:1;overflow-y:auto;padding:20px 22px 30px;display:flex;flex-direction:column;}
+  .tab-panel{display:none;flex:1;flex-direction:column;}
+  .tab-panel.active{display:flex;}
+
+  /* ---- fixed-size text box, no auto-grow ---- */
+  .box-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .box-toolbar .hint{font-size:11px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
+  .time-btn{
+    display:inline-flex;align-items:center;gap:5px;background:var(--teal-soft);color:var(--teal);border:none;
+    border-radius:6px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'IBM Plex Mono',monospace;
+  }
+  .time-btn:hover{background:var(--teal);color:#fff;}
+  .time-btn svg{width:13px;height:13px;}
+
+  textarea.fixed-box{
+    width:100%;height:320px;border:1.5px solid var(--line);border-radius:8px;padding:12px;
+    font-family:'Inter',sans-serif;font-size:14px;line-height:1.7;text-align:left;
+    resize:none;overflow-y:auto;background:var(--paper-raised);color:var(--ink);flex:1;
+  }
+  textarea.fixed-box:focus{outline:none;border-color:var(--brass);}
+  .save-hint{font-size:11px;color:var(--ink-soft);margin-top:8px;font-family:'IBM Plex Mono',monospace;}
+
+  .empty-state{text-align:center;padding:30px 10px;color:var(--ink-soft);font-size:13px;}
+  .empty-state svg{width:34px;height:34px;stroke:var(--line);margin-bottom:8px;}
+
+  .upload-zone{
+    border:2px dashed var(--line);border-radius:8px;padding:18px;text-align:center;cursor:pointer;
+    background:var(--paper-raised);margin-bottom:16px;transition:border-color .15s;
+  }
+  .upload-zone:hover{border-color:var(--brass);}
+  .upload-zone svg{width:22px;height:22px;stroke:var(--ink-soft);margin-bottom:6px;}
+  .upload-zone p{margin:0;font-size:12.5px;color:var(--ink-soft);}
+  .upload-zone input{display:none;}
+
+  .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .photo-thumb{position:relative;border-radius:8px;overflow:hidden;border:1.5px solid var(--line);aspect-ratio:1/1;}
+  .photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .photo-thumb .rm{position:absolute;top:4px;right:4px;background:rgba(22,35,44,0.75);border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .photo-thumb .rm svg{width:11px;height:11px;stroke:#fff;}
+
+  .doc-list{display:flex;flex-direction:column;gap:8px;}
+  .doc-item{display:flex;align-items:center;gap:10px;background:var(--paper-raised);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;}
+  .doc-item svg{width:18px;height:18px;stroke:var(--ink-soft);flex-shrink:0;}
+  .doc-item .doc-name{flex:1;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .doc-item .doc-size{font-size:11px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
+  .doc-item a, .doc-item .rm-btn{background:none;border:none;cursor:pointer;padding:4px;}
+  .doc-item a svg, .doc-item .rm-btn svg{width:15px;height:15px;stroke:var(--ink-soft);}
+  .doc-item .rm-btn:hover svg{stroke:var(--danger);}
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);
+    padding:10px 18px;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;opacity:0;pointer-events:none;
+    transition:all .25s ease;z-index:60;box-shadow:var(--shadow);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .status-line{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);text-align:center;margin-top:26px;}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 40" fill="none">
+        <circle cx="20" cy="20" r="18" stroke="#16232C" stroke-width="1.5"/>
+        <path d="M20 8 L20 20 L28 24" stroke="#AD8A4E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="20" cy="20" r="2" fill="#16232C"/>
+      </svg>
+      <div>
+        <h1>Daylog</h1>
+        <p>Calendar &amp; Records</p>
+      </div>
+    </div>
+    <div class="export-group">
+      <button class="btn ghost" id="exportExcel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        <span>Export Excel</span>
+      </button>
+      <button class="btn ghost" id="exportWord">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        <span>Export Word</span>
+      </button>
+      <button class="btn ghost" id="exportJson">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 21h16"/></svg>
+        <span>Export JSON</span>
+      </button>
+      <label class="btn ghost" id="importJsonLabel" for="importJsonInput" style="margin:0;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9m0 0l-4 4m4-4l4 4"/><path d="M4 3h16"/></svg>
+        <span>Import JSON</span>
+      </label>
+      <input type="file" id="importJsonInput" accept="application/json,.json" style="display:none;">
+    </div>
+  </div>
+
+  <div class="monthbar">
+    <div class="title-wrap">
+      <h2 id="monthLabel">Month</h2>
+      <span class="yr" id="yearLabel">0000</span>
+    </div>
+    <div class="nav-controls">
+      <button class="nav-btn" id="prevMonth" title="Previous month">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <button class="btn small ghost" id="todayBtn">Today</button>
+      <button class="nav-btn" id="nextMonth" title="Next month">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="weekdays">
+    <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+  </div>
+  <div class="grid" id="calGrid"></div>
+
+  <div class="status-line" id="statusLine">Loading your records…</div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="panel" id="panel">
+  <div class="panel-head">
+    <div>
+      <p class="pd-date" id="panelDate">—</p>
+      <p class="pd-sub" id="panelSub">—</p>
+    </div>
+    <button class="panel-close" id="panelClose">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="log">Log</button>
+    <button class="tab" data-tab="photos">Photos</button>
+    <button class="tab" data-tab="docs">Docs</button>
+  </div>
+
+  <div class="tab-content">
+
+    <div class="tab-panel active" id="tab-log">
+      <div class="box-toolbar">
+        <span class="hint">Press Tab to insert the current time</span>
+        <button class="time-btn" id="insertTimeBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          Time
+        </button>
+      </div>
+      <textarea class="fixed-box" id="logArea" placeholder="Type freely — jot events, plans, anything for this day. Tap Time (or press Tab) to drop in the current time as you go."></textarea>
+      <p class="save-hint" id="logSaveHint">Saved automatically as you type.</p>
+    </div>
+
+    <div class="tab-panel" id="tab-photos">
+      <label class="upload-zone" for="photoInput">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        <p>Click to add photos</p>
+        <input type="file" id="photoInput" accept="image/*" multiple>
+      </label>
+      <div class="photo-grid" id="photoGrid"></div>
+    </div>
+
+    <div class="tab-panel" id="tab-docs">
+      <label class="upload-zone" for="docInput">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        <p>Click to add documents</p>
+        <input type="file" id="docInput" multiple>
+      </label>
+      <div class="doc-list" id="docList"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'daylog-data-v2';
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const WEEKDAYS_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  let data = {};           // { 'YYYY-MM-DD': { log:'', photos:[], docs:[] } }
+  let currentYear, currentMonth; // month is 0-indexed
+  let activeDateKey = null;
+  let saveTimer = null;
+
+  const $ = (sel, ctx=document) => ctx.querySelector(sel);
+  const $$ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
+
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function keyFor(y,m,d){ return `${y}-${pad(m+1)}-${pad(d)}`; }
+  function todayKey(){ const t=new Date(); return keyFor(t.getFullYear(), t.getMonth(), t.getDate()); }
+  function escapeHtml(str){
+    return String(str||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+  function humanSize(bytes){
+    if(bytes < 1024) return bytes + ' B';
+    if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/(1024*1024)).toFixed(1) + ' MB';
+  }
+  function currentTimeStr(){
+    const n = new Date();
+    return `${pad(n.getHours())}:${pad(n.getMinutes())}`;
+  }
+  function showToast(msg){
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(()=> t.classList.remove('show'), 2200);
+  }
+  function entryFor(key){
+    if(!data[key]) data[key] = { log:'', photos:[], docs:[] };
+    if(data[key].log === undefined) data[key].log = '';
+    // migrate any older structured events into the plain log text
+    if(data[key].events && data[key].events.length){
+      const lines = data[key].events.map(e => `${e.time ? e.time+' — ' : ''}${e.title}${e.desc ? ' — '+e.desc : ''}`);
+      data[key].log = (data[key].log ? data[key].log + '\n' : '') + lines.join('\n');
+      delete data[key].events;
+    }
+    if(!data[key].photos) data[key].photos = [];
+    if(!data[key].docs) data[key].docs = [];
+    return data[key];
+  }
+
+  // ---------- Persistence ----------
+  async function loadData(){
+    try{
+      const res = await window.storage.get(STORAGE_KEY, false);
+      if(res && res.value){
+        data = JSON.parse(res.value);
+      }
+      $('#statusLine').textContent = 'Your records are saved to this browser session.';
+    }catch(e){
+      data = {};
+      $('#statusLine').textContent = 'Starting a fresh logbook.';
+    }
+  }
+
+  async function persist(){
+    clearTimeout(persist._t);
+    persist._t = setTimeout(async ()=>{
+      try{
+        await window.storage.set(STORAGE_KEY, JSON.stringify(data), false);
+      }catch(e){
+        showToast('Could not save — storage may be full. Try smaller files.');
+      }
+    }, 250);
+  }
+
+  // ---------- Calendar rendering ----------
+  function renderCalendar(){
+    $('#monthLabel').textContent = MONTHS[currentMonth];
+    $('#yearLabel').textContent = currentYear;
+
+    const grid = $('#calGrid');
+    grid.innerHTML = '';
+
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth+1, 0).getDate();
+    const tKey = todayKey();
+
+    for(let i=0;i<firstDay;i++){
+      const empty = document.createElement('div');
+      empty.className = 'cell empty';
+      grid.appendChild(empty);
+    }
+
+    for(let d=1; d<=daysInMonth; d++){
+      const key = keyFor(currentYear, currentMonth, d);
+      const entry = data[key];
+      const cell = document.createElement('div');
+      cell.className = 'cell' + (key === tKey ? ' today' : '');
+      cell.dataset.key = key;
+
+      const top = document.createElement('div');
+      const num = document.createElement('div');
+      num.className = 'daynum';
+      num.textContent = d;
+      top.appendChild(num);
+
+      const preview = document.createElement('div');
+      preview.className = 'events-preview';
+      const logText = entry && entry.log ? entry.log.trim() : '';
+      if(logText){
+        preview.textContent = logText.split('\n')[0];
+      }
+
+      const badges = document.createElement('div');
+      badges.className = 'badges';
+      if(entry){
+        if(logText) badges.appendChild(dotEl('log'));
+        if(entry.photos && entry.photos.length) badges.appendChild(dotEl('photos'));
+        if(entry.docs && entry.docs.length) badges.appendChild(dotEl('docs'));
+      }
+
+      cell.appendChild(top);
+      cell.appendChild(preview);
+      cell.appendChild(badges);
+      cell.addEventListener('click', ()=> openPanel(key));
+      grid.appendChild(cell);
+    }
+  }
+  function dotEl(cls){
+    const s = document.createElement('span');
+    s.className = 'dot ' + cls;
+    return s;
+  }
+
+  // ---------- Panel ----------
+  function openPanel(key){
+    activeDateKey = key;
+    const [y,m,d] = key.split('-').map(Number);
+    const dateObj = new Date(y, m-1, d);
+    $('#panelDate').textContent = `${WEEKDAYS_FULL[dateObj.getDay()]}, ${d} ${MONTHS[m-1]}`;
+    $('#panelSub').textContent = y;
+
+    const entry = entryFor(key);
+    $('#logArea').value = entry.log || '';
+    renderPhotos();
+    renderDocs();
+
+    switchTab('log');
+    $('#overlay').classList.add('open');
+    $('#panel').classList.add('open');
+  }
+  function closePanel(){
+    $('#overlay').classList.remove('open');
+    $('#panel').classList.remove('open');
+    activeDateKey = null;
+    renderCalendar();
+  }
+  function switchTab(name){
+    $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    $$('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-'+name));
+  }
+
+  // ---------- Log box (fixed size, Tab-key timestamp) ----------
+  const logArea = $('#logArea');
+
+  function insertTimestamp(textarea){
+    const stamp = currentTimeStr() + ' — ';
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const before = textarea.value.slice(0, start);
+    const after = textarea.value.slice(end);
+    // start the timestamp on its own line if we're not already at the start of a line
+    const needsNewline = before.length > 0 && !before.endsWith('\n');
+    const insert = (needsNewline ? '\n' : '') + stamp;
+    textarea.value = before + insert + after;
+    const cursor = before.length + insert.length;
+    textarea.setSelectionRange(cursor, cursor);
+    textarea.dispatchEvent(new Event('input'));
+  }
+
+  logArea.addEventListener('keydown', (e)=>{
+    if(e.key === 'Tab'){
+      e.preventDefault();
+      insertTimestamp(logArea);
+    }
+  });
+  $('#insertTimeBtn').addEventListener('click', ()=>{
+    logArea.focus();
+    insertTimestamp(logArea);
+  });
+  logArea.addEventListener('input', (e)=>{
+    if(!activeDateKey) return;
+    entryFor(activeDateKey).log = e.target.value;
+    persist();
+    $('#logSaveHint').textContent = 'Saving…';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=> $('#logSaveHint').textContent = 'Saved automatically as you type.', 500);
+  });
+
+  // ---------- Photos tab ----------
+  function renderPhotos(){
+    const entry = entryFor(activeDateKey);
+    const grid = $('#photoGrid');
+    grid.innerHTML = '';
+    entry.photos.forEach(p=>{
+      const div = document.createElement('div');
+      div.className = 'photo-thumb';
+      div.innerHTML = `<img src="${p.dataUrl}" alt="${escapeHtml(p.name)}">
+        <button class="rm" data-id="${p.id}"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
+      grid.appendChild(div);
+    });
+    $$('.rm', grid).forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const entry = entryFor(activeDateKey);
+        entry.photos = entry.photos.filter(p=>p.id !== btn.dataset.id);
+        persist();
+        renderPhotos();
+      });
+    });
+  }
+  $('#photoInput').addEventListener('change', (e)=>{
+    const files = Array.from(e.target.files || []);
+    if(!files.length) return;
+    let remaining = files.length;
+    files.forEach(file=>{
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        entryFor(activeDateKey).photos.push({ id: uid(), name: file.name, dataUrl: reader.result });
+        persist();
+        remaining--;
+        if(remaining === 0){ renderPhotos(); showToast('Photo(s) added'); }
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  });
+
+  // ---------- Docs tab ----------
+  function docIcon(){
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`;
+  }
+  function renderDocs(){
+    const entry = entryFor(activeDateKey);
+    const list = $('#docList');
+    list.innerHTML = '';
+    if(!entry.docs.length){
+      list.innerHTML = `<div class="empty-state">${docIcon()}<div>No documents attached to this day yet.</div></div>`;
+      return;
+    }
+    entry.docs.forEach(doc=>{
+      const div = document.createElement('div');
+      div.className = 'doc-item';
+      div.innerHTML = `
+        ${docIcon()}
+        <div class="doc-name" title="${escapeHtml(doc.name)}">${escapeHtml(doc.name)}</div>
+        <div class="doc-size">${humanSize(doc.size||0)}</div>
+        <a href="${doc.dataUrl}" download="${escapeHtml(doc.name)}" title="Download">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 21h16"/></svg>
+        </a>
+        <button class="rm-btn" data-id="${doc.id}" title="Remove">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>`;
+      list.appendChild(div);
+    });
+    $$('.rm-btn', list).forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const entry = entryFor(activeDateKey);
+        entry.docs = entry.docs.filter(d=>d.id !== btn.dataset.id);
+        persist();
+        renderDocs();
+      });
+    });
+  }
+  $('#docInput').addEventListener('change', (e)=>{
+    const files = Array.from(e.target.files || []);
+    if(!files.length) return;
+    let remaining = files.length;
+    files.forEach(file=>{
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        entryFor(activeDateKey).docs.push({ id: uid(), name: file.name, size: file.size, dataUrl: reader.result });
+        persist();
+        remaining--;
+        if(remaining === 0){ renderDocs(); showToast('Document(s) added'); }
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  });
+
+  // ---------- Tabs / panel controls ----------
+  $$('.tab').forEach(t => t.addEventListener('click', ()=> switchTab(t.dataset.tab)));
+  $('#panelClose').addEventListener('click', closePanel);
+  $('#overlay').addEventListener('click', closePanel);
+
+  // ---------- Month navigation ----------
+  $('#prevMonth').addEventListener('click', ()=>{
+    currentMonth--;
+    if(currentMonth < 0){ currentMonth = 11; currentYear--; }
+    renderCalendar();
+  });
+  $('#nextMonth').addEventListener('click', ()=>{
+    currentMonth++;
+    if(currentMonth > 11){ currentMonth = 0; currentYear++; }
+    renderCalendar();
+  });
+  $('#todayBtn').addEventListener('click', ()=>{
+    const t = new Date();
+    currentYear = t.getFullYear();
+    currentMonth = t.getMonth();
+    renderCalendar();
+  });
+
+  // ---------- Export helpers ----------
+  // Splits each day's free-typed log into rows. A line starting with "HH:MM" (optionally
+  // followed by — or -) is read as a timestamped entry; everything else is one row with no time.
+  const TIME_LINE = /^(\d{1,2}:\d{2})\s*(?:—|-|:)?\s*(.*)$/;
+
+  function collectAllRows(){
+    const rows = [];
+    Object.keys(data).sort().forEach(key=>{
+      const entry = data[key];
+      const text = (entry.log || '').trim();
+      if(!text) return;
+      const [y,m,d] = key.split('-').map(Number);
+      const dayName = WEEKDAYS_FULL[new Date(y, m-1, d).getDay()];
+      text.split('\n').forEach(line=>{
+        line = line.trim();
+        if(!line) return;
+        const match = line.match(TIME_LINE);
+        if(match){
+          rows.push({ Date:key, Day:dayName, Time: match[1], Entry: match[2] });
+        }else{
+          rows.push({ Date:key, Day:dayName, Time: '', Entry: line });
+        }
+      });
+    });
+    return rows;
+  }
+
+  $('#exportExcel').addEventListener('click', ()=>{
+    const rows = collectAllRows();
+    if(!rows.length){ showToast('Nothing to export yet'); return; }
+    const ws = XLSX.utils.json_to_sheet(rows, { header:['Date','Day','Time','Entry'] });
+    ws['!cols'] = [{wch:12},{wch:11},{wch:8},{wch:55}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Log');
+    XLSX.writeFile(wb, `Daylog-${new Date().toISOString().slice(0,10)}.xlsx`);
+    showToast('Excel file downloaded');
+  });
+
+  $('#exportWord').addEventListener('click', ()=>{
+    const rows = collectAllRows();
+    if(!rows.length){ showToast('Nothing to export yet'); return; }
+    let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head><meta charset="utf-8"><title>Daylog</title></head>
+    <body style="font-family:Calibri,Arial,sans-serif;">
+    <h1 style="font-family:Georgia,serif;color:#16232C;">Daylog</h1>
+    <p style="font-size:11pt;color:#555;">Exported ${new Date().toLocaleDateString()}</p>
+    <table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;width:100%;font-size:10.5pt;">
+      <tr style="background:#16232C;color:#ffffff;">
+        <th align="left">Date</th><th align="left">Day</th><th align="left">Time</th><th align="left">Entry</th>
+      </tr>`;
+    rows.forEach((r,i)=>{
+      const bg = i % 2 === 0 ? '#F7F5EF' : '#FFFFFF';
+      html += `<tr style="background:${bg};">
+        <td>${escapeHtml(r.Date)}</td><td>${escapeHtml(r.Day)}</td><td>${escapeHtml(r.Time)}</td><td>${escapeHtml(r.Entry)}</td></tr>`;
+    });
+    html += `</table></body></html>`;
+    const blob = new Blob(['\ufeff', html], { type:'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Daylog-${new Date().toISOString().slice(0,10)}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Word file downloaded');
+  });
+
+  // ---------- JSON export / import (portable to other webpages) ----------
+  $('#exportJson').addEventListener('click', ()=>{
+    const payload = {
+      app: 'Daylog',
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      data: data
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Daylog-backup-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('JSON file downloaded');
+  });
+
+  $('#importJsonInput').addEventListener('change', (e)=>{
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      let incoming;
+      try{
+        const parsed = JSON.parse(reader.result);
+        incoming = (parsed && parsed.data && typeof parsed.data === 'object') ? parsed.data : parsed;
+        if(!incoming || typeof incoming !== 'object') throw new Error('bad shape');
+      }catch(err){
+        showToast('That file is not a valid Daylog JSON export');
+        e.target.value = '';
+        return;
+      }
+      const mergeIn = window.confirm(
+        'Import this JSON file.\n\nOK = merge into your current calendar (same-date entries are combined).\nCancel = replace your current calendar entirely with this file.'
+      );
+      if(mergeIn){
+        Object.keys(incoming).forEach(key=>{
+          const inc = incoming[key] || {};
+          const existing = entryFor(key);
+          if(inc.log){
+            existing.log = existing.log ? (existing.log + '\n' + inc.log) : inc.log;
+          }
+          if(Array.isArray(inc.photos)) existing.photos = existing.photos.concat(inc.photos);
+          if(Array.isArray(inc.docs)) existing.docs = existing.docs.concat(inc.docs);
+        });
+      }else{
+        data = incoming;
+      }
+      persist();
+      renderCalendar();
+      if(activeDateKey) openPanel(activeDateKey);
+      showToast('Import complete');
+      e.target.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  // ---------- Init ----------
+  async function init(){
+    const t = new Date();
+    currentYear = t.getFullYear();
+    currentMonth = t.getMonth();
+    await loadData();
+    renderCalendar();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
